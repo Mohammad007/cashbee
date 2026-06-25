@@ -1,0 +1,80 @@
+{% extends "site/base.html" %}
+{% block title %}{{ referrer.name }} invited you to CashBee{% endblock %}
+
+{% block content %}
+<section class="page-hero ref-hero">
+  <div class="hero-glow"></div>
+  <div class="container reveal">
+    <span class="pill"><i class="fa-solid fa-gift"></i> You've been invited</span>
+    <h1><span class="gradient-text">{{ referrer.name }}</span><br />invited you to CashBee</h1>
+    <p class="lead center">
+      Sign up with the code below and you'll both start earning. Watch ads, refer friends,
+      and withdraw real cash to UPI.
+    </p>
+
+    <div class="ref-code-card">
+      <p class="ref-code-label">Your referral code</p>
+      <div class="ref-code" id="refCode">{{ referrer.code }}</div>
+      <button class="btn btn-primary btn-lg" id="copyBtn" data-code="{{ referrer.code }}"><i class="fa-solid fa-copy"></i> Copy code</button>
+      <p class="ref-stat">
+        {{ referrer.name }} has already referred <strong>{{ referrer.referral_count }}</strong>
+        {{ 'friend' if referrer.referral_count == 1 else 'friends' }}.
+      </p>
+    </div>
+
+    <div class="hero-cta center">
+      <a href="#download" class="btn btn-ghost btn-lg"><i class="fa-solid fa-download"></i> Download the app</a>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="steps">
+      <div class="step reveal">
+        <div class="step-icon"><i class="fa-solid fa-download"></i></div>
+        <h3>1. Download</h3>
+        <p>Install the CashBee app on your Android phone.</p>
+      </div>
+      <div class="step reveal" style="--d:.1s">
+        <div class="step-icon"><i class="fa-solid fa-key"></i></div>
+        <h3>2. Enter the code</h3>
+        <p>Sign up and paste <strong>{{ referrer.code }}</strong> when asked for a referral code.</p>
+      </div>
+      <div class="step reveal" style="--d:.2s">
+        <div class="step-icon"><i class="fa-solid fa-circle-check"></i></div>
+        <h3>3. Start earning</h3>
+        <p>You both get a bonus — then watch ads to keep earning.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="download" id="download">
+  <div class="container download-inner reveal">
+    <h2>Claim your bonus</h2>
+    <p>Download CashBee and use code <strong>{{ referrer.code }}</strong> at signup.</p>
+    <div class="store-buttons">
+      <a href="#" class="store-btn">
+        <span class="store-emoji"><i class="fa-brands fa-android"></i></span>
+        <span><small>Download the</small><strong>Android APK</strong></span>
+      </a>
+      <a href="#" class="store-btn">
+        <span class="store-emoji"><i class="fa-brands fa-google-play"></i></span>
+        <span><small>GET IT ON</small><strong>Google Play</strong></span>
+      </a>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.getElementById('copyBtn')?.addEventListener('click', function () {
+    const code = this.dataset.code;
+    navigator.clipboard?.writeText(code);
+    this.innerHTML = '<i class="fa-solid fa-check"></i> Copied!';
+    setTimeout(() => (this.innerHTML = '<i class="fa-solid fa-copy"></i> Copy code'), 1800);
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,57 @@
+{% extends "admin/base.html" %}
+{% block title %}Ad Campaigns{% endblock %}
+{% block heading %}Ad Campaigns{% endblock %}
+{% block subheading %}Manage rewarded-ad slots and rewards{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-head"><h3>Create a campaign</h3></div>
+  <form method="post" action="{{ url_for('admin_web.create_ad') }}" class="inline-form">
+    <label><span>Title</span><input type="text" name="title" placeholder="Rewarded Video" required /></label>
+    <label><span>Coins reward</span><input type="number" name="coins_reward" value="10" min="1" required /></label>
+    <label><span>Daily limit</span><input type="number" name="daily_limit" value="10" min="1" required /></label>
+    <button class="btn btn-primary"><i class="fa-solid fa-plus"></i> Create</button>
+  </form>
+</div>
+
+<div class="card">
+  <div class="card-head"><h3>All campaigns</h3><span class="muted">{{ ads|length }} total</span></div>
+  {% if ads %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Title</th><th>Reward</th><th>Daily limit</th><th>Total views</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody>
+        {% for ad in ads %}
+        <tr>
+          <td><strong>{{ ad.title }}</strong></td>
+          <td>{{ ad.coins_reward }} coins</td>
+          <td>{{ ad.daily_limit }}</td>
+          <td>{{ '{:,}'.format(ad.get('total_views', 0)) }}</td>
+          <td>{% if ad.is_active %}<span class="badge badge-paid">Active</span>{% else %}<span class="badge badge-pending">Paused</span>{% endif %}</td>
+          <td class="actions">
+            <button type="button" class="btn btn-xs btn-ghost js-edit-ad"
+                    data-action="{{ url_for('admin_web.update_ad', ad_id=ad.id) }}"
+                    data-title="{{ ad.title }}"
+                    data-coins="{{ ad.coins_reward }}"
+                    data-limit="{{ ad.daily_limit }}"
+                    data-active="{{ '1' if ad.is_active else '0' }}">
+              <i class="fa-solid fa-pen"></i> Edit
+            </button>
+            <button type="button" class="btn btn-xs btn-danger js-confirm"
+                    data-action="{{ url_for('admin_web.delete_ad', ad_id=ad.id) }}"
+                    data-title="Delete campaign?"
+                    data-message="“{{ ad.title }}” will be permanently removed. This cannot be undone."
+                    data-confirm-text="Delete" data-icon="fa-trash-can">
+              <i class="fa-solid fa-trash-can"></i> Delete
+            </button>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="empty">No campaigns yet — create one above.</p>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends "admin/base.html" %}
+{% block title %}Referrals{% endblock %}
+{% block heading %}Referrals{% endblock %}
+{% block subheading %}Top referrers and passive-income leaderboard{% endblock %}
+
+{% block content %}
+<div class="mini-cards">
+  <div class="mini-card"><span>Active Referrers</span><strong>{{ totals.active_referrers }}</strong></div>
+  <div class="mini-card"><span>Total Referrals</span><strong>{{ '{:,}'.format(totals.total_referrals) }}</strong></div>
+  <div class="mini-card"><span>Referral Coins Paid</span><strong>{{ '{:,}'.format(totals.total_coins) }}</strong></div>
+</div>
+
+<div class="card">
+  <div class="card-head"><h3>Top 50 Referrers</h3></div>
+  {% if top_referrers %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>#</th><th>User</th><th>Code</th><th>Direct referrals</th><th>Coins earned</th></tr></thead>
+      <tbody>
+        {% for r in top_referrers %}
+        <tr>
+          <td><span class="rank rank-{{ loop.index if loop.index <= 3 else 'x' }}">{{ loop.index }}</span></td>
+          <td><strong>{{ r.name }}</strong><br /><span class="muted">{{ r.phone }}</span></td>
+          <td class="mono">{{ r.referral_code }}</td>
+          <td>{{ r.direct_count }}</td>
+          <td><strong>{{ '{:,}'.format(r.total_earned) }}</strong> coins</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="empty">No referrals recorded yet.</p>
+  {% endif %}
+</div>
+{% endblock %}

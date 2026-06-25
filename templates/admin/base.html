@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{% block title %}Dashboard{% endblock %} · CashBee Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='admin/style.css') }}" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐝</text></svg>" />
+  <!-- Apply persisted sidebar state before first paint to avoid flicker. -->
+  <script>try{if(localStorage.getItem('cb_sidebar')==='collapsed')document.documentElement.classList.add('sidebar-collapsed');}catch(e){}</script>
+</head>
+<body>
+  <div class="layout">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-brand">
+        <span class="brand-badge"><i class="fa-solid fa-sack-dollar"></i></span>
+        <div class="sidebar-brand-text">
+          <strong>CashBee</strong>
+          <small>Admin Console</small>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        {% set items = [
+          ('dashboard', 'fa-gauge-high', 'Dashboard', url_for('admin_web.dashboard')),
+          ('users', 'fa-users', 'Users', url_for('admin_web.users')),
+          ('ads', 'fa-rectangle-ad', 'Ad Campaigns', url_for('admin_web.ads')),
+          ('withdrawals', 'fa-money-bill-transfer', 'Withdrawals', url_for('admin_web.withdrawals')),
+          ('referrals', 'fa-share-nodes', 'Referrals', url_for('admin_web.referrals')),
+          ('settings', 'fa-gear', 'Settings', url_for('admin_web.settings'))
+        ] %}
+        {% for key, icon, label, href in items %}
+        <a href="{{ href }}" class="nav-item {{ 'active' if active == key else '' }}" title="{{ label }}">
+          <span class="nav-icon"><i class="fa-solid {{ icon }}"></i></span><span class="nav-label">{{ label }}</span>
+        </a>
+        {% endfor %}
+      </nav>
+      <div class="sidebar-foot">
+        <a href="{{ url_for('site.index') }}" target="_blank" class="nav-item" title="View website"><span class="nav-icon"><i class="fa-solid fa-globe"></i></span><span class="nav-label">View website</span></a>
+        <a href="{{ url_for('admin_web.logout') }}" class="nav-item" title="Log out"><span class="nav-icon"><i class="fa-solid fa-right-from-bracket"></i></span><span class="nav-label">Log out</span></a>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <div class="main">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button type="button" class="icon-btn" id="sidebarToggle" aria-label="Toggle sidebar"><i class="fa-solid fa-bars"></i></button>
+          <div>
+            <h1 class="page-title">{% block heading %}Dashboard{% endblock %}</h1>
+            <p class="page-sub">{% block subheading %}{% endblock %}</p>
+          </div>
+        </div>
+        <div class="topbar-right">
+          <div class="profile" id="profile">
+            <button type="button" class="profile-trigger" id="profileTrigger" aria-haspopup="true" aria-expanded="false">
+              <span class="admin-avatar">{{ (session.admin_email[0] | upper) if session.admin_email else 'A' }}</span>
+              <span class="profile-meta">
+                <span class="profile-name">Administrator</span>
+                <span class="profile-email">{{ session.admin_email }}</span>
+              </span>
+              <i class="fa-solid fa-chevron-down profile-caret"></i>
+            </button>
+            <div class="profile-menu" id="profileMenu" role="menu">
+              <div class="profile-menu-head">
+                <span class="admin-avatar lg">{{ (session.admin_email[0] | upper) if session.admin_email else 'A' }}</span>
+                <div>
+                  <strong>Administrator</strong>
+                  <small>{{ session.admin_email }}</small>
+                </div>
+              </div>
+              <a href="{{ url_for('admin_web.settings') }}" role="menuitem"><i class="fa-solid fa-gear"></i> Settings</a>
+              <a href="{{ url_for('site.index') }}" target="_blank" role="menuitem"><i class="fa-solid fa-globe"></i> View website</a>
+              <div class="profile-menu-sep"></div>
+              <a href="{{ url_for('admin_web.logout') }}" role="menuitem" class="danger"><i class="fa-solid fa-right-from-bracket"></i> Log out</a>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main class="content">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            <div class="flash-stack">
+            {% for category, message in messages %}
+              <div class="flash flash-{{ category }}">{{ message }}</div>
+            {% endfor %}
+            </div>
+          {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+    <div class="scrim" id="scrim"></div>
+  </div>
+
+  <!-- ===================== Edit Ad modal ===================== -->
+  <div class="modal" id="editAdModal" aria-hidden="true">
+    <div class="modal-overlay" data-close></div>
+    <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="editAdTitle">
+      <div class="modal-head">
+        <h3 id="editAdTitle"><i class="fa-solid fa-pen-to-square"></i> Edit Campaign</h3>
+        <button type="button" class="modal-close" data-close aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form method="post" id="editAdForm">
+        <div class="modal-body">
+          <label class="field"><span>Title</span><input type="text" name="title" id="editAdTitleInput" required /></label>
+          <div class="field-grid">
+            <label class="field"><span>Coins reward</span><input type="number" name="coins_reward" id="editAdCoins" min="1" required /></label>
+            <label class="field"><span>Daily limit</span><input type="number" name="daily_limit" id="editAdLimit" min="1" required /></label>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" name="is_active" value="1" id="editAdActive" />
+            <span class="toggle-track"><span class="toggle-thumb"></span></span>
+            <span class="toggle-label">Active</span>
+          </label>
+        </div>
+        <div class="modal-foot">
+          <button type="button" class="btn btn-ghost" data-close>Cancel</button>
+          <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Save changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===================== Confirmation modal ===================== -->
+  <div class="modal" id="confirmModal" aria-hidden="true">
+    <div class="modal-overlay" data-close></div>
+    <div class="modal-box modal-sm" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+      <form method="post" id="confirmForm">
+        <div class="modal-body confirm-body">
+          <div class="confirm-icon" id="confirmIcon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+          <h3 id="confirmTitle">Are you sure?</h3>
+          <p id="confirmMessage" class="muted"></p>
+          <label class="field" id="confirmReasonWrap" style="display:none;width:100%;text-align:left">
+            <span id="confirmReasonLabel">Reason</span>
+            <input type="text" id="confirmReasonInput" />
+          </label>
+          <div id="confirmHidden"></div>
+        </div>
+        <div class="modal-foot">
+          <button type="button" class="btn btn-ghost" data-close>Cancel</button>
+          <button type="submit" class="btn btn-danger" id="confirmBtn">Confirm</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='admin/app.js') }}"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

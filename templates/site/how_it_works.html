@@ -1,0 +1,77 @@
+{% extends "site/base.html" %}
+{% block title %}How CashBee Works — Watch, Earn, Withdraw{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+  <div class="hero-glow"></div>
+  <div class="container reveal">
+    <span class="pill"><i class="fa-solid fa-book-open"></i> The complete guide</span>
+    <h1>How <span class="gradient-text">CashBee</span> works</h1>
+    <p class="lead center">From your first ad to cash in your UPI — here's the entire journey, explained.</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container timeline">
+    {% set items = [
+      ('1', 'fa-mobile-screen-button', 'Sign up in seconds', 'Enter your phone number and verify with a one-time OTP over WhatsApp. No passwords, no paperwork. Got a referral code? Add it and your friend earns instantly.'),
+      ('2', 'fa-circle-play', 'Watch rewarded ads', 'Tap “Watch & Earn” to play a short video ad. Watch it to the end and coins land in your wallet automatically — credited securely on our servers.'),
+      ('3', 'fa-coins', 'Stack your coins', 'Every ad adds coins. Hit your daily limit, then come back tomorrow. Refer friends to earn 50 coins per signup plus 5% of everything they earn — forever.'),
+      ('4', 'fa-hand-holding-dollar', 'Withdraw to UPI', 'Reached the minimum balance? Enter any UPI ID and request a payout. We review it and send the money straight to your bank via UPI.')
+    ] %}
+    {% for no, icon, title, desc in items %}
+    <div class="tl-item reveal">
+      <div class="tl-marker"><i class="fa-solid {{ icon }}"></i></div>
+      <div class="tl-body">
+        <span class="step-no">STEP {{ no }}</span>
+        <h3>{{ title }}</h3>
+        <p>{{ desc }}</p>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="section section-alt">
+  <div class="container">
+    <div class="section-head reveal">
+      <h2>Why CashBee is different</h2>
+      <p>Built for trust, speed, and real payouts</p>
+    </div>
+    <div class="steps">
+      <div class="step reveal">
+        <div class="step-icon"><i class="fa-solid fa-lock"></i></div>
+        <h3>Server-verified earnings</h3>
+        <p>Coins are credited only on our backend after a verified ad view — no cheating, no reversals.</p>
+      </div>
+      <div class="step reveal" style="--d:.1s">
+        <div class="step-icon"><i class="fa-solid fa-bolt"></i></div>
+        <h3>Fast UPI payouts</h3>
+        <p>Withdrawals go straight to your UPI ID. No bank forms, no long waits.</p>
+      </div>
+      <div class="step reveal" style="--d:.2s">
+        <div class="step-icon"><i class="fa-solid fa-infinity"></i></div>
+        <h3>Lifetime referral income</h3>
+        <p>Earn 5% of your friends' ad earnings for as long as they keep using CashBee.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="download" id="download">
+  <div class="container download-inner reveal">
+    <h2>Ready to start earning?</h2>
+    <p>Download CashBee and watch your first ad today.</p>
+    <div class="store-buttons">
+      <a href="#" class="store-btn">
+        <span class="store-emoji"><i class="fa-brands fa-android"></i></span>
+        <span><small>Download the</small><strong>Android APK</strong></span>
+      </a>
+      <a href="#" class="store-btn">
+        <span class="store-emoji"><i class="fa-brands fa-google-play"></i></span>
+        <span><small>GET IT ON</small><strong>Google Play</strong></span>
+      </a>
+    </div>
+  </div>
+</section>
+{% endblock %}

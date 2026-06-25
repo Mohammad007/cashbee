@@ -1,0 +1,75 @@
+{% extends "admin/base.html" %}
+{% block title %}Users{% endblock %}
+{% block heading %}Users{% endblock %}
+{% block subheading %}{{ '{:,}'.format(total) }} registered users{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-head">
+    <h3>All Users</h3>
+    <form method="get" class="search-form">
+      <input type="search" name="search" value="{{ search }}" placeholder="Search name, phone or code…" />
+      <button type="submit" class="btn btn-sm btn-primary"><i class="fa-solid fa-magnifying-glass"></i> Search</button>
+      {% if search %}<a href="{{ url_for('admin_web.users') }}" class="btn btn-sm btn-ghost">Clear</a>{% endif %}
+    </form>
+  </div>
+
+  {% if users %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr><th>User</th><th>Code</th><th>Coins</th><th>Earned</th><th>Withdrawn</th><th>Referrals</th><th>Joined</th><th>Status</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td><strong>{{ u.name or 'CashBee User' }}</strong><br /><span class="muted">{{ u.phone }}</span></td>
+          <td class="mono">{{ u.referral_code }}</td>
+          <td>{{ '{:,}'.format(u.coins) }}</td>
+          <td>{{ '{:,}'.format(u.total_earned) }}</td>
+          <td>{{ '{:,}'.format(u.total_withdrawn) }}</td>
+          <td>{{ u.referral_count }}</td>
+          <td class="muted">{{ u.created_at[:10] }}</td>
+          <td>
+            {% if u.is_banned %}<span class="badge badge-rejected">Banned</span>
+            {% else %}<span class="badge badge-paid">Active</span>{% endif %}
+          </td>
+          <td class="actions">
+            {% if u.is_banned %}
+            <button type="button" class="btn btn-xs btn-ghost js-confirm"
+                    data-action="{{ url_for('admin_web.ban_user', user_id=u.id) }}"
+                    data-fields='{"banned": "0"}'
+                    data-title="Unban this user?"
+                    data-message="“{{ u.name or 'CashBee User' }}” ({{ u.phone }}) will be able to use the app again."
+                    data-confirm-text="Unban" data-variant="primary" data-icon="fa-user-check">
+              <i class="fa-solid fa-unlock"></i> Unban
+            </button>
+            {% else %}
+            <button type="button" class="btn btn-xs btn-danger js-confirm"
+                    data-action="{{ url_for('admin_web.ban_user', user_id=u.id) }}"
+                    data-fields='{"banned": "1"}'
+                    data-title="Ban this user?"
+                    data-message="“{{ u.name or 'CashBee User' }}” ({{ u.phone }}) will be blocked from earning and withdrawing."
+                    data-confirm-text="Ban user" data-icon="fa-ban">
+              <i class="fa-solid fa-ban"></i> Ban
+            </button>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if pages > 1 %}
+  <div class="pagination">
+    {% if page > 1 %}<a class="btn btn-sm btn-ghost" href="?page={{ page - 1 }}{% if search %}&search={{ search }}{% endif %}"><i class="fa-solid fa-arrow-left"></i> Prev</a>{% endif %}
+    <span class="muted">Page {{ page }} of {{ pages }}</span>
+    {% if page < pages %}<a class="btn btn-sm btn-ghost" href="?page={{ page + 1 }}{% if search %}&search={{ search }}{% endif %}">Next <i class="fa-solid fa-arrow-right"></i></a>{% endif %}
+  </div>
+  {% endif %}
+  {% else %}
+  <p class="empty">No users found{% if search %} for “{{ search }}”{% endif %}.</p>
+  {% endif %}
+</div>
+{% endblock %}

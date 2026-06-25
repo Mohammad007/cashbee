@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sign in · CashBee Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='admin/style.css') }}" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐝</text></svg>" />
+</head>
+<body class="login-body">
+  <div class="login-card">
+    <div class="login-brand">
+      <span class="brand-badge"><i class="fa-solid fa-sack-dollar"></i></span>
+      <h1>CashBee Admin</h1>
+      <p>Sign in to manage your earning platform</p>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}
+        <div class="flash flash-{{ category }}">{{ message }}</div>
+      {% endfor %}
+    {% endwith %}
+
+    <form method="post" class="login-form">
+      <label>
+        <span>Email</span>
+        <span class="input-icon"><i class="fa-solid fa-envelope"></i><input type="email" name="email" placeholder="admin@cashbee.app" required autofocus /></span>
+      </label>
+      <label>
+        <span>Password</span>
+        <span class="input-icon"><i class="fa-solid fa-lock"></i><input type="password" name="password" placeholder="••••••••" required /></span>
+      </label>
+      <button type="submit" class="btn btn-primary btn-block">Sign in <i class="fa-solid fa-arrow-right-to-bracket"></i></button>
+    </form>
+
+    <p class="login-hint">Default dev credentials: <code>admin@cashbee.app</code> / <code>admin123</code></p>
+  </div>
+</body>
+</html>

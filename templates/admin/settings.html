@@ -1,0 +1,45 @@
+{% extends "admin/base.html" %}
+{% block title %}Settings{% endblock %}
+{% block heading %}Economy Settings{% endblock %}
+{% block subheading %}Tune coin rates, limits, and referral rewards{% endblock %}
+
+{% block content %}
+<form method="post" class="settings-form">
+  <div class="card">
+    <div class="card-head"><h3>Coins &amp; Withdrawals</h3></div>
+    <div class="field-grid">
+      <label><span>Coin rate <small>(coins per ₹1)</small></span><input type="number" name="coin_rate" value="{{ settings.coin_rate }}" min="1" /></label>
+      <label><span>Minimum withdrawal <small>(coins)</small></span><input type="number" name="min_withdrawal" value="{{ settings.min_withdrawal }}" min="1" /></label>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h3>Ad Limits</h3></div>
+    <div class="field-grid">
+      <label><span>Daily ad limit <small>(per user)</small></span><input type="number" name="daily_ad_limit" value="{{ settings.daily_ad_limit }}" min="1" /></label>
+      <label><span>Ad cooldown <small>(seconds)</small></span><input type="number" name="ad_cooldown_seconds" value="{{ settings.ad_cooldown_seconds }}" min="0" /></label>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h3>Referral Rewards</h3></div>
+    <div class="field-grid">
+      <label><span>Signup bonus <small>(coins)</small></span><input type="number" name="referral_signup_bonus" value="{{ settings.referral_signup_bonus }}" min="0" /></label>
+      <label><span>Lifetime commission <small>(%)</small></span><input type="number" name="referral_bonus_percent" value="{{ settings.referral_bonus_percent }}" min="0" max="100" /></label>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h3>Maintenance</h3></div>
+    <label class="toggle">
+      <input type="checkbox" name="maintenance_mode" value="1" {{ 'checked' if settings.maintenance_mode }} />
+      <span class="toggle-track"><span class="toggle-thumb"></span></span>
+      <span class="toggle-label">Maintenance mode <small>— blocks ad earning while on</small></span>
+    </label>
+  </div>
+
+  <div class="form-actions">
+    <button class="btn btn-primary btn-lg">Save settings</button>
+  </div>
+</form>
+{% endblock %}

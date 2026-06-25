@@ -1,0 +1,82 @@
+{% extends "admin/base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block heading %}Dashboard{% endblock %}
+{% block subheading %}Overview of your CashBee platform{% endblock %}
+
+{% block content %}
+<div class="stat-cards">
+  {% set cards = [
+    ('fa-users', 'Total Users', stats.total_users, none, 'a'),
+    ('fa-coins', 'Coins Issued', stats.total_coins_issued, '≈ ₹' ~ stats.total_inr_issued, 'b'),
+    ('fa-clock', 'Pending Withdrawals', stats.pending_withdrawals, none, 'c'),
+    ('fa-rectangle-ad', 'Ad Views Today', stats.today_ad_views, none, 'd')
+  ] %}
+  {% for icon, label, value, sub, tone in cards %}
+  <div class="stat-card tone-{{ tone }}">
+    <div class="sc-icon"><i class="fa-solid {{ icon }}"></i></div>
+    <div>
+      <p class="sc-value">{{ '{:,}'.format(value) }}</p>
+      <p class="sc-label">{{ label }}</p>
+      {% if sub %}<p class="sc-sub">{{ sub }}</p>{% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="mini-cards">
+  <div class="mini-card"><span>Total Paid Out</span><strong>₹{{ '{:,}'.format(stats.total_paid) }}</strong></div>
+  <div class="mini-card"><span>Active Ad Campaigns</span><strong>{{ stats.active_ads }}</strong></div>
+  <div class="mini-card"><span>Banned Users</span><strong>{{ stats.banned_users }}</strong></div>
+</div>
+
+<div class="chart-grid">
+  <div class="card chart-card chart-wide">
+    <div class="card-head"><h3>Daily Ad Views</h3><span class="muted">last 14 days</span></div>
+    <canvas id="adViewsChart" height="110"></canvas>
+  </div>
+  <div class="card chart-card">
+    <div class="card-head"><h3>New Signups</h3><span class="muted">last 14 days</span></div>
+    <canvas id="signupsChart" height="160"></canvas>
+  </div>
+  <div class="card chart-card">
+    <div class="card-head"><h3>Withdrawal Volume (₹)</h3><span class="muted">last 14 days</span></div>
+    <canvas id="withdrawalChart" height="160"></canvas>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head">
+    <h3>Recent Withdrawals</h3>
+    <a href="{{ url_for('admin_web.withdrawals') }}" class="link">View all <i class="fa-solid fa-arrow-right"></i></a>
+  </div>
+  {% if recent_withdrawals %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>User</th><th>Coins</th><th>Amount</th><th>UPI</th><th>Status</th><th>Date</th></tr></thead>
+      <tbody>
+        {% for w in recent_withdrawals %}
+        <tr>
+          <td><strong>{{ w.user_name }}</strong><br /><span class="muted">{{ w.user_phone }}</span></td>
+          <td>{{ '{:,}'.format(w.coins) }}</td>
+          <td>₹{{ w.amount_inr }}</td>
+          <td class="mono">{{ w.upi_id }}</td>
+          <td><span class="badge badge-{{ w.status }}">{{ w.status }}</span></td>
+          <td class="muted">{{ w.created_at[:10] }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="empty">No withdrawals yet.</p>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+  window.CASHBEE_CHARTS = {{ charts | tojson }};
+</script>
+<script src="{{ url_for('static', filename='admin/charts.js') }}"></script>
+{% endblock %}

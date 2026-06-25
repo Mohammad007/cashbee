@@ -1,0 +1,16 @@
+{% extends "site/base.html" %}
+{% block title %}Page not found — CashBee{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+  <div class="hero-glow"></div>
+  <div class="container reveal" style="text-align:center">
+    <div class="error-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+    <h1>404 — <span class="gradient-text">Buzz off the trail</span></h1>
+    <p class="lead center">We couldn't find that page. Let's get you back to earning.</p>
+    <div class="hero-cta center">
+      <a href="{{ url_for('site.index') }}" class="btn btn-primary btn-lg"><i class="fa-solid fa-house"></i> Back to home</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

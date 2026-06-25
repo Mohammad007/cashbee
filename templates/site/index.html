@@ -1,0 +1,174 @@
+{% extends "site/base.html" %}
+
+{% block content %}
+<!-- ============================ HERO ============================ -->
+<section class="hero">
+  <div class="hero-glow"></div>
+  <div class="container hero-grid">
+    <div class="hero-copy reveal">
+      <span class="pill"><i class="fa-solid fa-money-bill-wave"></i> Earn real cash, instantly</span>
+      <h1>
+        Watch Ads,<br />
+        <span class="gradient-text">Earn Real Cash</span>
+      </h1>
+      <p class="lead">
+        Get paid for watching short video ads and referring friends.
+        Withdraw your earnings directly to UPI — no minimum hassle, no waiting.
+      </p>
+      <div class="hero-cta">
+        <a href="{{ url_for('site.download_apk') }}" class="btn btn-primary btn-lg"><i
+            class="fa-solid fa-download"></i> Download App</a>
+        <a href="{{ url_for('site.how_it_works') }}" class="btn btn-ghost btn-lg">See how it works</a>
+      </div>
+      <div class="hero-trust">
+        <div class="avatars">
+          <span><i class="fa-solid fa-user"></i></span>
+          <span><i class="fa-solid fa-user"></i></span>
+          <span><i class="fa-solid fa-user"></i></span>
+          <span><i class="fa-solid fa-user"></i></span>
+        </div>
+        <span>Joined by <strong>{{ stats.users }}</strong> earners</span>
+      </div>
+    </div>
+
+    <!-- Phone mockup -->
+    <div class="hero-phone reveal">
+      <div class="coin coin-1"><i class="fa-solid fa-coins"></i></div>
+      <div class="coin coin-2"><i class="fa-solid fa-coins"></i></div>
+      <div class="coin coin-3"><i class="fa-solid fa-money-bill-wave"></i></div>
+      <div class="phone">
+        <div class="phone-notch"></div>
+        <div class="phone-screen">
+          <p class="ps-label">Total Balance</p>
+          <p class="ps-balance" data-count="12450">12,450</p>
+          <p class="ps-sub">coins ≈ ₹1,245</p>
+          <div class="ps-card">
+            <p><i class="fa-solid fa-circle-play"></i> Watch &amp; Earn</p>
+            <span>+10 coins per ad</span>
+          </div>
+          <div class="ps-card">
+            <p><i class="fa-solid fa-users"></i> Refer &amp; Earn</p>
+            <span>5% passive forever</span>
+          </div>
+          <div class="ps-btn">Withdraw to UPI</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ STATS ============================ -->
+<section class="stats">
+  <div class="container stats-grid">
+    <div class="stat reveal">
+      <p class="stat-value">{{ stats.users }}</p>
+      <p class="stat-label">Total Users</p>
+    </div>
+    <div class="stat reveal">
+      <p class="stat-value">{{ stats.paid }}</p>
+      <p class="stat-label">Total Paid Out</p>
+    </div>
+    <div class="stat reveal">
+      <p class="stat-value">{{ stats.ads }}</p>
+      <p class="stat-label">Ads Watched</p>
+    </div>
+  </div>
+</section>
+
+<!-- ========================= HOW IT WORKS ========================= -->
+<section class="section" id="how">
+  <div class="container">
+    <div class="section-head reveal">
+      <h2>How It Works</h2>
+      <p>Three simple steps to start earning today</p>
+    </div>
+    <div class="steps">
+      <div class="step reveal">
+        <div class="step-icon"><i class="fa-solid fa-circle-play"></i></div>
+        <span class="step-no">STEP 1</span>
+        <h3>Watch Ads</h3>
+        <p>Open the app and watch short rewarded video ads whenever you have a free moment.</p>
+      </div>
+      <div class="step reveal" style="--d:.1s">
+        <div class="step-icon"><i class="fa-solid fa-coins"></i></div>
+        <span class="step-no">STEP 2</span>
+        <h3>Earn Coins</h3>
+        <p>Get coins credited instantly after every ad. Refer friends for 50 coins + 5% forever.</p>
+      </div>
+      <div class="step reveal" style="--d:.2s">
+        <div class="step-icon"><i class="fa-solid fa-hand-holding-dollar"></i></div>
+        <span class="step-no">STEP 3</span>
+        <h3>Withdraw to UPI</h3>
+        <p>Cash out your coins straight to any UPI ID. Fast, secure, real money.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========================= REFERRAL ========================= -->
+<section class="section section-alt" id="referral">
+  <div class="container referral-grid">
+    <div class="reveal">
+      <h2>Refer &amp; Earn <span class="gradient-text">Passive Income</span></h2>
+      <p class="lead">
+        Invite your friends and earn <strong>50 coins</strong> instantly for every
+        signup. Then keep earning <strong>5% of their ad earnings forever</strong> —
+        true passive income that grows while you sleep.
+      </p>
+      <ul class="check-list">
+        <li>50 coins per referral signup</li>
+        <li>5% lifetime commission</li>
+        <li>Unlimited referrals</li>
+      </ul>
+      <a href="#download" class="btn btn-primary btn-lg">Start referring</a>
+    </div>
+    <div class="referral-card reveal">
+      <p class="rc-big" data-count="5" data-suffix="%">5%</p>
+      <p class="rc-mid">of every friend's earnings</p>
+      <p class="rc-small">paid to you, forever</p>
+    </div>
+  </div>
+</section>
+
+<!-- ========================= FAQ ========================= -->
+<section class="section" id="faq">
+  <div class="container faq">
+    <div class="section-head reveal">
+      <h2>Frequently Asked Questions</h2>
+      <p>Everything you need to know before you start</p>
+    </div>
+    <div class="faq-list">
+      {% set faqs = [
+        ('Is CashBee really free?', 'Yes! CashBee is 100% free to download and use. You earn by watching ads — you never pay anything.'),
+        ('How much can I earn?', 'Earnings depend on how many ads you watch (up to a daily limit) and how many friends you refer. Referral income is passive and lifelong.'),
+        ('How do withdrawals work?', 'Once you reach the minimum balance (500 coins = ₹50), enter your UPI ID and request a withdrawal. Payouts are processed to your UPI after a quick review.'),
+        ('When do I get my referral bonus?', 'You get 50 coins the moment your friend signs up with your code, plus 5% of all their future ad earnings automatically.')
+      ] %}
+      {% for q, a in faqs %}
+      <details class="faq-item reveal">
+        <summary>{{ q }}<span class="faq-plus"><i class="fa-solid fa-plus"></i></span></summary>
+        <p>{{ a }}</p>
+      </details>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- ========================= DOWNLOAD ========================= -->
+<section class="download" id="download">
+  <div class="container download-inner reveal">
+    <h2>Start earning in 60 seconds</h2>
+    <p>Download CashBee, log in with your phone, and watch your first ad. Your coins are waiting.</p>
+    <div class="store-buttons">
+      <a href="{{ url_for('site.download_apk') }}" class="store-btn">
+        <span class="store-emoji"><i class="fa-brands fa-android"></i></span>
+        <span><small>Download the</small><strong>Android APK</strong></span>
+      </a>
+      <a href="#" class="store-btn" aria-disabled="true">
+        <span class="store-emoji"><i class="fa-brands fa-google-play"></i></span>
+        <span><small>Coming soon to</small><strong>Google Play</strong></span>
+      </a>
+    </div>
+  </div>
+</section>
+{% endblock %}

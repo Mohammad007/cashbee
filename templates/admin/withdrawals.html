@@ -1,0 +1,65 @@
+{% extends "admin/base.html" %}
+{% block title %}Withdrawals{% endblock %}
+{% block heading %}Withdrawals{% endblock %}
+{% block subheading %}Review and process UPI payout requests{% endblock %}
+
+{% block content %}
+<div class="tabs">
+  {% set tabs = [('all', 'All'), ('pending', 'Pending'), ('paid', 'Paid'), ('rejected', 'Rejected')] %}
+  {% for key, label in tabs %}
+  <a href="{{ url_for('admin_web.withdrawals') }}{% if key != 'all' %}?status={{ key }}{% endif %}"
+     class="tab {{ 'active' if status == key else '' }}">
+    {{ label }} <span class="tab-count">{{ counts[key] }}</span>
+  </a>
+  {% endfor %}
+</div>
+
+<div class="card">
+  {% if withdrawals %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>User</th><th>Coins</th><th>Amount</th><th>UPI ID</th><th>Status</th><th>Requested</th><th>Actions</th></tr></thead>
+      <tbody>
+        {% for w in withdrawals %}
+        <tr>
+          <td><strong>{{ w.user_name }}</strong><br /><span class="muted">{{ w.user_phone }}</span></td>
+          <td>{{ '{:,}'.format(w.coins) }}</td>
+          <td><strong>₹{{ w.amount_inr }}</strong></td>
+          <td class="mono">{{ w.upi_id }}</td>
+          <td>
+            <span class="badge badge-{{ w.status }}">{{ w.status }}</span>
+            {% if w.admin_note %}<br /><span class="muted note">{{ w.admin_note }}</span>{% endif %}
+          </td>
+          <td class="muted">{{ w.created_at[:16].replace('T', ' ') }}</td>
+          <td class="actions">
+            {% if w.status == 'pending' %}
+            <button type="button" class="btn btn-xs btn-primary js-confirm"
+                    data-action="{{ url_for('admin_web.approve_withdrawal', wid=w.id) }}"
+                    data-title="Approve &amp; pay out?"
+                    data-message="₹{{ w.amount_inr }} will be sent to {{ w.upi_id }} for {{ w.user_name }}. This triggers a real payout."
+                    data-confirm-text="Approve &amp; Pay" data-variant="primary" data-icon="fa-money-bill-wave">
+              <i class="fa-solid fa-check"></i> Approve &amp; Pay
+            </button>
+            <button type="button" class="btn btn-xs btn-danger js-confirm"
+                    data-action="{{ url_for('admin_web.reject_withdrawal', wid=w.id) }}"
+                    data-title="Reject withdrawal?"
+                    data-message="The {{ '{:,}'.format(w.coins) }} held coins will be refunded to {{ w.user_name }}."
+                    data-confirm-text="Reject &amp; Refund" data-icon="fa-xmark"
+                    data-reason="admin_note" data-reason-label="Reason (optional)"
+                    data-reason-placeholder="Reason shown to the user">
+              <i class="fa-solid fa-xmark"></i> Reject
+            </button>
+            {% else %}
+            <span class="muted">—</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="empty">No {{ status if status != 'all' else '' }} withdrawals.</p>
+  {% endif %}
+</div>
+{% endblock %}
