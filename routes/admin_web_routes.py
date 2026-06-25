@@ -10,6 +10,7 @@ All data is read/written through `database.db` (the TinyDB JSON layer), so the
 panel and the mobile API share exactly the same source of truth.
 """
 import functools
+import os
 from datetime import datetime, timezone
 
 from flask import (
@@ -20,11 +21,16 @@ from flask import (
     url_for,
     session,
     flash,
+    current_app,
 )
+from werkzeug.utils import secure_filename
 
 from config import Config
 import database.db as db
 from services import create_payout
+
+# The single APK on disk that the public /download route always serves.
+STORED_APK = "cashbee-latest.apk"
 
 admin_web_bp = Blueprint("admin_web", __name__, url_prefix="/admin")
 
@@ -388,5 +394,44 @@ def settings():
         return redirect(url_for("admin_web.settings"))
 
     return render_template(
-        "admin/settings.html", settings=db.get_settings(), active="settings"
+        "admin/settings.html",
+        settings=db.get_settings(),
+        build=db.get_app_build(),
+        active="settings",
     )
+
+
+# --------------------------------------------------------------------------- #
+# App build upload — admin uploads a new APK, users download the latest
+# --------------------------------------------------------------------------- #
+@admin_web_bp.post("/app/upload")
+@login_required
+def upload_app():
+    file = request.files.get("apk")
+    version = (request.form.get("version") or "").strip()
+
+    if not file or not file.filename:
+        flash("Please choose an APK file to upload.", "error")
+        return redirect(url_for("admin_web.settings"))
+    if not file.filename.lower().endswith(".apk"):
+        flash("Only .apk files are allowed.", "error")
+        return redirect(url_for("admin_web.settings"))
+
+    upload_dir = os.path.join(current_app.root_path, "uploads")
+    os.makedirs(upload_dir, exist_ok=True)
+    path = os.path.join(upload_dir, STORED_APK)
+    file.save(path)
+
+    db.set_app_build(
+        {
+            "version": version or "1.0",
+            "original_name": secure_filename(file.filename),
+            "size": os.path.getsize(path),
+            "uploaded_at": db.now_iso(),
+        }
+    )
+    flash(
+        f"New build (v{version or '1.0'}) uploaded — users now get this version.",
+        "success",
+    )
+    return redirect(url_for("admin_web.settings"))

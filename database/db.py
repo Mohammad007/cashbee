@@ -46,6 +46,7 @@ ads_db = _open("ads.json")
 referrals_db = _open("referrals.json")
 withdrawals_db = _open("withdrawals.json")
 settings_db = _open("settings.json")
+app_build_db = _open("app_build.json")
 
 Q = Query()
 
@@ -103,6 +104,22 @@ def update_settings(patch: dict) -> dict:
         settings_db.truncate()
         settings_db.insert(current)
     return current
+
+
+# --------------------------------------------------------------------------- #
+# App build (the latest APK the admin uploads for users to download)
+# --------------------------------------------------------------------------- #
+def get_app_build() -> dict | None:
+    with _lock:
+        rows = app_build_db.all()
+        return rows[0] if rows else None
+
+
+def set_app_build(meta: dict) -> dict:
+    with _lock:
+        app_build_db.truncate()
+        app_build_db.insert(meta)
+    return meta
 
 
 # --------------------------------------------------------------------------- #

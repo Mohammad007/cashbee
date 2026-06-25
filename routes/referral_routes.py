@@ -6,7 +6,7 @@ from services import auth_required
 
 referral_bp = Blueprint("referral", __name__)
 
-REF_BASE_URL = "https://unprotractive-aniyah-unvulnerable.ngrok-free.dev/ref/"
+REF_BASE_URL = "https://web-production-962f5.up.railway.app/ref/"
 
 
 @referral_bp.get("/info")

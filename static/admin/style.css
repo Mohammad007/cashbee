@@ -229,6 +229,14 @@ label small { color: var(--muted); font-weight: 400; }
 .toggle input:checked + .toggle-track .toggle-thumb { transform: translateX(20px); }
 .toggle-label { font-weight: 600; font-size: .92rem; }
 
+/* ---------- App build / upload ---------- */
+.build-current { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 14px 18px; margin-bottom: 18px; }
+.build-meta { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.upload-form { display: flex; gap: 16px; align-items: flex-end; flex-wrap: wrap; }
+.upload-form .field { flex: 1; min-width: 200px; }
+.upload-form input[type="file"] { padding: 9px 12px; border: 1px dashed var(--line); border-radius: 9px; font-size: .85rem; background: #fff; cursor: pointer; }
+.upload-form input[type="file"]::file-selector-button { border: 0; background: var(--brand-soft); color: var(--brand-2); padding: 6px 12px; border-radius: 7px; font-weight: 600; cursor: pointer; margin-right: 12px; font-family: inherit; }
+
 /* ---------- Modals ---------- */
 .modal { position: fixed; inset: 0; z-index: 100; display: none; align-items: center; justify-content: center; padding: 20px; }
 .modal.open { display: flex; }

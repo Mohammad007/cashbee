@@ -8,14 +8,27 @@ page always looks populated even on a brand-new install.
 """
 import os
 
-from flask import Blueprint, render_template, abort, send_from_directory, current_app
+from flask import (
+    Blueprint,
+    render_template,
+    abort,
+    send_from_directory,
+    current_app,
+    Response,
+)
 
 import database.db as db
 
 site_bp = Blueprint("site", __name__)
 
-# The release APK the user drops into backend/templates/site/.
+# Legacy fallback: an APK manually dropped into backend/templates/site/.
 APK_FILENAME = "CashBee_v0.1.apk"
+# The build the admin uploads from the panel (backend/uploads/cashbee-latest.apk).
+STORED_APK = "cashbee-latest.apk"
+
+# AdMob publisher id (from flutter_app ca-app-pub-6622501207630771). Overridable
+# via env so you never have to touch code if your AdMob account changes.
+ADMOB_PUBLISHER_ID = os.getenv("ADMOB_PUBLISHER_ID", "pub-6622501207630771")
 
 
 def _live_stats() -> dict:
@@ -59,17 +72,47 @@ def index():
 @site_bp.get("/download")
 @site_bp.get("/download/cashbee.apk")
 def download_apk():
-    """Serve the Android APK as a file download."""
+    """Serve the latest Android APK uploaded by the admin (or a legacy fallback)."""
+    apk_mime = "application/vnd.android.package-archive"
+
+    # 1) Latest build uploaded from the admin panel.
+    upload_dir = os.path.join(current_app.root_path, "uploads")
+    if os.path.exists(os.path.join(upload_dir, STORED_APK)):
+        build = db.get_app_build()
+        version = (build or {}).get("version", "")
+        name = f"CashBee-{version}.apk" if version else "CashBee.apk"
+        return send_from_directory(
+            upload_dir,
+            STORED_APK,
+            as_attachment=True,
+            download_name=name,
+            mimetype=apk_mime,
+        )
+
+    # 2) Legacy fallback: an APK manually placed in templates/site/.
     site_dir = os.path.join(current_app.root_path, "templates", "site")
-    if not os.path.exists(os.path.join(site_dir, APK_FILENAME)):
-        abort(404)
-    return send_from_directory(
-        site_dir,
-        APK_FILENAME,
-        as_attachment=True,
-        download_name="CashBee.apk",
-        mimetype="application/vnd.android.package-archive",
-    )
+    if os.path.exists(os.path.join(site_dir, APK_FILENAME)):
+        return send_from_directory(
+            site_dir,
+            APK_FILENAME,
+            as_attachment=True,
+            download_name="CashBee.apk",
+            mimetype=apk_mime,
+        )
+
+    abort(404)
+
+
+@site_bp.get("/app-ads.txt")
+def app_ads_txt():
+    """
+    IAB app-ads.txt — authorizes Google AdMob to sell this app's ad inventory
+    and blocks impostors (anti-fraud). AdMob crawls this at the developer
+    website declared on the app's store listing. Must be served at the domain
+    ROOT: https://<your-domain>/app-ads.txt
+    """
+    body = f"google.com, {ADMOB_PUBLISHER_ID}, DIRECT, f08c47fec0942fa0\n"
+    return Response(body, mimetype="text/plain")
 
 
 @site_bp.get("/how-it-works")

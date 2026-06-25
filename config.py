@@ -72,7 +72,7 @@ class Config:
     # --- CORS ---
     CORS_ORIGINS = os.getenv(
         "CORS_ORIGINS",
-        "http://localhost:3000,http://localhost:3001,https://unprotractive-aniyah-unvulnerable.ngrok-free.dev",
+        "http://localhost:3000,http://localhost:3001,https://web-production-962f5.up.railway.app",
     ).split(",")
 
     # --- Rate limiting ---
