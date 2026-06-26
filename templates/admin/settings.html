@@ -30,6 +30,62 @@
   </div>
 
   <div class="card">
+    <div class="card-head">
+      <h3><i class="fa-solid fa-rectangle-ad"></i> AdMob Ad Units</h3>
+      <span class="muted">App fetches these on launch — no rebuild needed</span>
+    </div>
+    <div class="field-grid">
+      <label><span>Rewarded ad unit ID</span><input type="text" name="admob_rewarded_id" value="{{ settings.admob_rewarded_id }}" placeholder="ca-app-pub-XXXX/XXXX" /></label>
+      <label><span>Interstitial ad unit ID</span><input type="text" name="admob_interstitial_id" value="{{ settings.admob_interstitial_id }}" placeholder="ca-app-pub-XXXX/XXXX" /></label>
+      <label><span>Banner ad unit ID</span><input type="text" name="admob_banner_id" value="{{ settings.admob_banner_id }}" placeholder="ca-app-pub-XXXX/XXXX" /></label>
+    </div>
+    <div class="toggle-row">
+      <label class="toggle">
+        <input type="checkbox" name="ads_enabled" value="1" {{ 'checked' if settings.ads_enabled }} />
+        <span class="toggle-track"><span class="toggle-thumb"></span></span>
+        <span class="toggle-label">Ads enabled <small>— turn all ads on/off in the app</small></span>
+      </label>
+      <label class="toggle">
+        <input type="checkbox" name="use_test_ads" value="1" {{ 'checked' if settings.use_test_ads }} />
+        <span class="toggle-track"><span class="toggle-thumb"></span></span>
+        <span class="toggle-label">Use test ads <small>— serve Google test units (for testing only)</small></span>
+      </label>
+    </div>
+    <p class="muted" style="margin-top:14px"><i class="fa-solid fa-circle-info"></i> The AdMob <strong>App ID</strong> (ca-app-pub-…~…) lives in the app manifest and still needs a rebuild — only these unit IDs are remote.</p>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <h3><i class="fa-solid fa-credit-card"></i> Payments (Razorpay)</h3>
+      <span class="muted">UPI payout credentials for withdrawals</span>
+    </div>
+
+    <label class="field" style="max-width:280px;margin-bottom:18px">
+      <span>Active mode</span>
+      <select name="razorpay_mode" class="select">
+        <option value="test" {{ 'selected' if settings.razorpay_mode != 'live' }}>Test mode</option>
+        <option value="live" {{ 'selected' if settings.razorpay_mode == 'live' }}>Live (production)</option>
+      </select>
+    </label>
+
+    <h4 class="sub-head">Test credentials</h4>
+    <div class="field-grid">
+      <label><span>Test Key ID</span><input type="text" name="razorpay_test_key_id" value="{{ settings.razorpay_test_key_id }}" placeholder="rzp_test_xxxxxxxx" /></label>
+      <label><span>Test Account number <small>(RazorpayX)</small></span><input type="text" name="razorpay_test_account_number" value="{{ settings.razorpay_test_account_number }}" placeholder="2323230000000000" /></label>
+      <label><span>Test Key secret</span><input type="password" name="razorpay_test_key_secret" autocomplete="new-password" placeholder="{{ '•••••••• (saved — leave blank to keep)' if settings.razorpay_test_key_secret else 'Test key secret' }}" /></label>
+    </div>
+
+    <h4 class="sub-head">Live credentials</h4>
+    <div class="field-grid">
+      <label><span>Live Key ID</span><input type="text" name="razorpay_live_key_id" value="{{ settings.razorpay_live_key_id }}" placeholder="rzp_live_xxxxxxxx" /></label>
+      <label><span>Live Account number <small>(RazorpayX)</small></span><input type="text" name="razorpay_live_account_number" value="{{ settings.razorpay_live_account_number }}" placeholder="2323230000000000" /></label>
+      <label><span>Live Key secret</span><input type="password" name="razorpay_live_key_secret" autocomplete="new-password" placeholder="{{ '•••••••• (saved — leave blank to keep)' if settings.razorpay_live_key_secret else 'Live key secret' }}" /></label>
+    </div>
+
+    <p class="muted" style="margin-top:14px"><i class="fa-solid fa-lock"></i> Secrets are write-only — leave a secret field blank to keep the stored value. Payouts use the credentials of the selected <strong>Active mode</strong>.</p>
+  </div>
+
+  <div class="card">
     <div class="card-head"><h3>Maintenance</h3></div>
     <label class="toggle">
       <input type="checkbox" name="maintenance_mode" value="1" {{ 'checked' if settings.maintenance_mode }} />

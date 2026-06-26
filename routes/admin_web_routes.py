@@ -389,6 +389,31 @@ def settings():
                 except (TypeError, ValueError):
                     pass
         patch["maintenance_mode"] = request.form.get("maintenance_mode") == "1"
+
+        # AdMob ad unit IDs (strings) + flags — served to the app at runtime.
+        for key in ("admob_banner_id", "admob_interstitial_id", "admob_rewarded_id"):
+            if request.form.get(key) is not None:
+                patch[key] = (request.form.get(key) or "").strip()
+        patch["ads_enabled"] = request.form.get("ads_enabled") == "1"
+        patch["use_test_ads"] = request.form.get("use_test_ads") == "1"
+
+        # Razorpay — mode + non-secret fields always saved; secrets only when a
+        # new value is typed (blank = keep the existing stored secret).
+        mode = (request.form.get("razorpay_mode") or "test").lower()
+        patch["razorpay_mode"] = "live" if mode == "live" else "test"
+        for key in (
+            "razorpay_test_key_id",
+            "razorpay_test_account_number",
+            "razorpay_live_key_id",
+            "razorpay_live_account_number",
+        ):
+            if request.form.get(key) is not None:
+                patch[key] = (request.form.get(key) or "").strip()
+        for key in ("razorpay_test_key_secret", "razorpay_live_key_secret"):
+            val = (request.form.get(key) or "").strip()
+            if val:
+                patch[key] = val
+
         db.update_settings(patch)
         flash("Settings saved.", "success")
         return redirect(url_for("admin_web.settings"))

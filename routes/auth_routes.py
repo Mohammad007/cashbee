@@ -26,11 +26,9 @@ def send_otp_route():
     result = send_otp(phone)
     if not result.get("sent"):
         return jsonify({"error": "Failed to send OTP", "detail": result}), 502
-    resp = {"message": "OTP sent via WhatsApp", "expires_in": result.get("expires_in", 300)}
-    if result.get("dev_mode"):
-        resp["message"] = "OTP sent (dev mode)"
-        resp["dev_otp"] = result.get("otp")  # convenience for local testing only
-    return jsonify(resp)
+    return jsonify(
+        {"message": "OTP sent via WhatsApp", "expires_in": result.get("expires_in", 300)}
+    )
 
 
 @auth_bp.post("/verify-otp")

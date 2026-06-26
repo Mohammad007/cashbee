@@ -22,6 +22,33 @@ def available_ads():
     return jsonify({"ads": ads})
 
 
+# Google's official TEST ad units (always fill) — used when use_test_ads is on.
+_TEST_REWARDED = "ca-app-pub-3940256099942544/5224354917"
+_TEST_INTERSTITIAL = "ca-app-pub-3940256099942544/1033173712"
+_TEST_BANNER = "ca-app-pub-3940256099942544/6300978111"
+
+
+@ad_bp.get("/config")
+def ads_config():
+    """
+    Runtime AdMob config for the mobile app. The app fetches this on launch, so
+    the admin can change ad unit IDs (or flip to test ads / disable ads) from the
+    panel WITHOUT shipping a new build. IDs are not secret — they ship in any APK.
+    """
+    s = db.get_settings()
+    test = bool(s.get("use_test_ads"))
+    return jsonify(
+        {
+            "maintenance_mode": bool(s.get("maintenance_mode")),
+            "ads_enabled": bool(s.get("ads_enabled", True)),
+            "use_test_ads": test,
+            "rewarded_ad_unit_id": _TEST_REWARDED if test else (s.get("admob_rewarded_id") or ""),
+            "interstitial_ad_unit_id": _TEST_INTERSTITIAL if test else (s.get("admob_interstitial_id") or ""),
+            "banner_ad_unit_id": _TEST_BANNER if test else (s.get("admob_banner_id") or ""),
+        }
+    )
+
+
 @ad_bp.post("/watch-complete")
 @auth_required
 @limiter.limit("20 per minute")  # belt-and-suspenders; daily limit enforced below

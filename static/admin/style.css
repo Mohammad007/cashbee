@@ -228,6 +228,7 @@ label small { color: var(--muted); font-weight: 400; }
 .toggle input:checked + .toggle-track { background: linear-gradient(135deg, var(--brand), var(--brand-2)); }
 .toggle input:checked + .toggle-track .toggle-thumb { transform: translateX(20px); }
 .toggle-label { font-weight: 600; font-size: .92rem; }
+.toggle-row { display: flex; flex-direction: column; gap: 16px; margin-top: 18px; }
 
 /* ---------- App build / upload ---------- */
 .build-current { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 14px 18px; margin-bottom: 18px; }
@@ -254,6 +255,9 @@ label small { color: var(--muted); font-weight: 400; }
 .modal-foot { display: flex; justify-content: flex-end; gap: 10px; padding: 16px 22px; border-top: 1px solid var(--line); background: #fafbfc; border-radius: 0 0 16px 16px; }
 .field { display: flex; flex-direction: column; gap: 6px; font-size: .82rem; font-weight: 600; color: var(--ink-2); }
 .field input { padding: 10px 13px; border: 1px solid var(--line); border-radius: 9px; font-size: .9rem; background: #fff; color: var(--ink); }
+.select { padding: 10px 13px; border: 1px solid var(--line); border-radius: 9px; font-size: .9rem; background: #fff; color: var(--ink); cursor: pointer; }
+.select:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-soft); }
+.sub-head { font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin: 6px 0 12px; }
 .confirm-body { text-align: center; align-items: center; padding-top: 28px; }
 .confirm-icon { width: 60px; height: 60px; border-radius: 50%; display: grid; place-items: center; font-size: 1.55rem; background: var(--red-bg); color: var(--red); }
 .confirm-icon.primary { background: var(--brand-soft); color: var(--brand-2); }

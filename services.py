@@ -1,8 +1,10 @@
 """
 External integrations: JWT, WhatsApp OTP, Razorpay payouts.
 
-Each integration degrades gracefully into a "dev mode" so the whole stack
-runs locally with zero third-party credentials.
+Production configuration:
+  - OTP is always delivered & verified over WhatsApp (no dev shortcut).
+  - Razorpay payout credentials (test + live) are managed from the admin panel
+    and read from the database at call time.
 """
 import functools
 import time
@@ -88,10 +90,7 @@ def admin_required(fn):
 # CashBee only forwards the phone number and issues its own JWT on success.
 #
 # `phone` arrives as "+91XXXXXXXXXX"; the provider expects "91XXXXXXXXXX".
-# A dev-mode shortcut (OTP_DEV_MODE=true) skips WhatsApp entirely and accepts
-# OTP_DEV_CODE, so the stack runs offline.
 # --------------------------------------------------------------------------- #
-_otp_store: dict[str, float] = {}  # phone -> expiry (dev mode only)
 OTP_TTL = 300  # seconds
 
 
@@ -114,12 +113,7 @@ def _wa_error(data: dict) -> str:
 
 
 def send_otp(phone: str) -> dict:
-    """Request an OTP. Dev mode skips WhatsApp; otherwise delegates delivery."""
-    if Config.OTP_DEV_MODE:
-        _otp_store[phone] = time.time() + OTP_TTL
-        return {"sent": True, "dev_mode": True, "otp": Config.OTP_DEV_CODE,
-                "expires_in": OTP_TTL}
-
+    """Request an OTP over WhatsApp via the external provider."""
     wa_phone = phone.lstrip("+")
     try:
         resp = requests.post(
@@ -143,27 +137,12 @@ def send_otp(phone: str) -> dict:
         pass
 
     if resp.status_code // 100 == 2:
-        return {
-            "sent": True,
-            "dev_mode": False,
-            "expires_in": int(data.get("expiresInSeconds") or OTP_TTL),
-        }
+        return {"sent": True, "expires_in": int(data.get("expiresInSeconds") or OTP_TTL)}
     return {"sent": False, "error": _wa_error(data)}
 
 
 def verify_otp(phone: str, otp: str) -> bool:
-    """Verify the OTP. Dev mode checks the fixed code; else asks the provider."""
-    if Config.OTP_DEV_MODE:
-        if otp != Config.OTP_DEV_CODE:
-            return False
-        expiry = _otp_store.get(phone)
-        # Accept the dev code whether or not a send was recorded (offline-friendly).
-        if expiry is not None and time.time() > expiry:
-            _otp_store.pop(phone, None)
-            return False
-        _otp_store.pop(phone, None)
-        return True
-
+    """Verify the OTP with the WhatsApp provider."""
     wa_phone = phone.lstrip("+")
     try:
         resp = requests.post(
@@ -178,18 +157,38 @@ def verify_otp(phone: str, otp: str) -> bool:
 
 
 # --------------------------------------------------------------------------- #
-# Razorpay payout
+# Razorpay payout — credentials come from the admin panel (DB settings).
 # --------------------------------------------------------------------------- #
+def _razorpay_creds() -> dict:
+    """Active Razorpay credentials based on the admin-selected mode (test/live)."""
+    s = db.get_settings()
+    mode = (s.get("razorpay_mode") or "test").lower()
+    prefix = "razorpay_live_" if mode == "live" else "razorpay_test_"
+    return {
+        "mode": mode,
+        "key_id": (s.get(prefix + "key_id") or "").strip(),
+        "key_secret": (s.get(prefix + "key_secret") or "").strip(),
+        "account_number": (s.get(prefix + "account_number") or "").strip(),
+    }
+
+
 def create_payout(upi_id: str, amount_inr: float, reference: str) -> dict:
-    """Trigger a Razorpay UPI payout. Returns a result dict."""
-    if Config.PAYOUT_DEV_MODE or not Config.RAZORPAY_KEY_ID:
-        return {"success": True, "dev_mode": True, "payout_id": f"dev_payout_{reference}"}
+    """Trigger a Razorpay UPI payout using the admin-configured credentials."""
+    creds = _razorpay_creds()
+    if not (creds["key_id"] and creds["key_secret"] and creds["account_number"]):
+        return {
+            "success": False,
+            "error": (
+                f"Razorpay {creds['mode']} credentials are not configured. "
+                "Add them in Admin → Settings → Payments."
+            ),
+        }
 
     try:
         # Razorpay payouts use a contact + fund_account + payout flow.
-        auth = (Config.RAZORPAY_KEY_ID, Config.RAZORPAY_KEY_SECRET)
+        auth = (creds["key_id"], creds["key_secret"])
         payload = {
-            "account_number": Config.RAZORPAY_ACCOUNT_NUMBER,
+            "account_number": creds["account_number"],
             "amount": int(amount_inr * 100),  # paise
             "currency": "INR",
             "mode": "UPI",
@@ -211,7 +210,7 @@ def create_payout(upi_id: str, amount_inr: float, reference: str) -> dict:
         )
         data = resp.json()
         if resp.status_code in (200, 201):
-            return {"success": True, "payout_id": data.get("id"), "raw": data}
+            return {"success": True, "payout_id": data.get("id"), "mode": creds["mode"], "raw": data}
         return {"success": False, "error": data}
     except requests.RequestException as exc:
         return {"success": False, "error": str(exc)}

@@ -47,16 +47,6 @@ class Config:
     WHATSAPP_OTP_TEMPLATE_NAME = os.getenv(
         "WHATSAPP_OTP_TEMPLATE_NAME", "OTP Verification"
     )
-    # In dev mode no WhatsApp message is sent; a fixed OTP is accepted instead.
-    # Set OTP_DEV_MODE=false to use real WhatsApp OTP.
-    OTP_DEV_MODE = os.getenv("OTP_DEV_MODE", "false").lower() == "true"
-    OTP_DEV_CODE = os.getenv("OTP_DEV_CODE", "123456")
-
-    # --- Razorpay payouts ---
-    RAZORPAY_KEY_ID = os.getenv("RAZORPAY_KEY_ID", "")
-    RAZORPAY_KEY_SECRET = os.getenv("RAZORPAY_KEY_SECRET", "")
-    RAZORPAY_ACCOUNT_NUMBER = os.getenv("RAZORPAY_ACCOUNT_NUMBER", "")
-    PAYOUT_DEV_MODE = os.getenv("PAYOUT_DEV_MODE", "true").lower() == "true"
 
     # --- App economy defaults (overridable via admin settings) ---
     DEFAULT_SETTINGS = {
@@ -67,6 +57,25 @@ class Config:
         "referral_signup_bonus": 50,
         "referral_bonus_percent": 5,  # % of referee ad earnings to referrer
         "maintenance_mode": False,
+        # --- AdMob ad unit IDs (served to the app at runtime; change these from
+        # the admin panel and the app picks them up on next launch — NO rebuild).
+        # NOTE: the AdMob *App ID* (ca-app-pub-...~...) lives in the Android
+        # manifest and still needs a rebuild; only the unit IDs below are remote.
+        "ads_enabled": True,
+        "use_test_ads": False,  # True => app uses Google's official test units
+        "admob_banner_id": "ca-app-pub-6622501207630771/8875072569",
+        "admob_interstitial_id": "ca-app-pub-6622501207630771/8015618167",
+        "admob_rewarded_id": "ca-app-pub-6622501207630771/2501235907",
+        # --- Razorpay payouts (managed entirely from the admin panel) ---
+        # Keep both test and live credentials; `razorpay_mode` selects which set
+        # is used for real payouts. Secrets are write-only in the admin UI.
+        "razorpay_mode": "test",  # "test" | "live"
+        "razorpay_test_key_id": "",
+        "razorpay_test_key_secret": "",
+        "razorpay_test_account_number": "",
+        "razorpay_live_key_id": "",
+        "razorpay_live_key_secret": "",
+        "razorpay_live_account_number": "",
     }
 
     # --- CORS ---
