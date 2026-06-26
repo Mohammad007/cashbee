@@ -63,9 +63,7 @@ class Config:
         # manifest and still needs a rebuild; only the unit IDs below are remote.
         "ads_enabled": True,
         "use_test_ads": False,  # True => app uses Google's official test units
-        "admob_banner_id": "ca-app-pub-6622501207630771/8875072569",
-        "admob_interstitial_id": "ca-app-pub-6622501207630771/8015618167",
-        "admob_rewarded_id": "ca-app-pub-6622501207630771/2501235907",
+        "admob_rewarded_id": "ca-app-pub-6622501207630771/8376042409",
         # --- Razorpay payouts (managed entirely from the admin panel) ---
         # Keep both test and live credentials; `razorpay_mode` selects which set
         # is used for real payouts. Secrets are write-only in the admin UI.
@@ -76,12 +74,45 @@ class Config:
         "razorpay_live_key_id": "",
         "razorpay_live_key_secret": "",
         "razorpay_live_account_number": "",
+        # --- Gamification (all editable from Admin → Gamification) ---
+        # Daily streak rewards: coins for day 1..7 (cycle restarts after day 7).
+        "streak_rewards": [10, 15, 20, 25, 30, 40, 100],
+        # First-withdrawal bonus (coins) credited on the user's first withdraw.
+        "first_withdrawal_bonus": 250,
+        # Lucky-spin prize table (weighted random; weights need not sum to 100).
+        "spin_prizes": [
+            {"label": "Try Again", "coins": 0, "weight": 40},
+            {"label": "Small Win", "coins": 5, "weight": 25},
+            {"label": "Medium Win", "coins": 15, "weight": 15},
+            {"label": "Good Win", "coins": 30, "weight": 10},
+            {"label": "Great Win", "coins": 75, "weight": 7},
+            {"label": "Jackpot!", "coins": 250, "weight": 2},
+            {"label": "MEGA JACKPOT", "coins": 1000, "weight": 1},
+        ],
     }
+
+    # Level tiers: (min_lifetime_coins, level, name, multiplier). Highest first.
+    LEVELS = [
+        (40000, 5, "Diamond", 2.0),
+        (15000, 4, "Platinum", 1.75),
+        (5000, 3, "Gold", 1.5),
+        (1000, 2, "Silver", 1.25),
+        (0, 1, "Bronze", 1.0),
+    ]
+
+    # Referral milestones: friends -> (coins, badge).
+    MILESTONES = [
+        (5, 500, "Connector"),
+        (10, 1500, "Influencer"),
+        (25, 5000, "Ambassador"),
+        (50, 15000, "Legend"),
+        (100, 50000, "CashBee Champion"),
+    ]
 
     # --- CORS ---
     CORS_ORIGINS = os.getenv(
         "CORS_ORIGINS",
-        "http://localhost:3000,http://localhost:3001,https://web-production-962f5.up.railway.app",
+        "http://localhost:3000,http://localhost:3001,https://cashbee.up.railway.app",
     ).split(",")
 
     # --- Rate limiting ---

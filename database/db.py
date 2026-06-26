@@ -47,8 +47,16 @@ referrals_db = _open("referrals.json")
 withdrawals_db = _open("withdrawals.json")
 settings_db = _open("settings.json")
 app_build_db = _open("app_build.json")
+festivals_db = _open("festivals.json")
+milestones_db = _open("milestones.json")
+spins_db = _open("spins.json")
 
 Q = Query()
+
+# India Standard Time (UTC+5:30) — streaks/festivals run on the Indian calendar.
+from datetime import timedelta
+
+IST = timezone(timedelta(hours=5, minutes=30))
 
 
 # --------------------------------------------------------------------------- #
@@ -60,6 +68,11 @@ def now_iso() -> str:
 
 def today_str() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%d")
+
+
+def today_ist() -> str:
+    """Today's date (YYYY-MM-DD) in IST — used for streaks & festivals."""
+    return datetime.now(IST).strftime("%Y-%m-%d")
 
 
 def new_id() -> str:
@@ -156,10 +169,36 @@ def create_user(phone: str, referred_by: str | None = None) -> dict:
         "is_banned": False,
         "photo_url": "",
         "created_at": now_iso(),
+        # --- Gamification ---
+        # Daily streak
+        "current_streak": 0,
+        "longest_streak": 0,
+        "last_active_date": "",
+        # Level system
+        "level": 1,
+        "level_name": "Bronze",
+        "lifetime_coins_earned": 0,
+        "coin_multiplier": 1.0,
+        # Referral milestones
+        "total_referrals": 0,
+        "milestones_claimed": [],
+        "referral_badges": [],
+        # First withdrawal bonus
+        "first_withdrawal_done": False,
+        # Lucky spin
+        "spin_tickets": 0,
+        "total_spins": 0,
+        "total_spin_earnings": 0,
     }
     with _lock:
         users_db.insert(user)
     return user
+
+
+def get_field(user: dict, key: str, default):
+    """Read a (possibly missing on older rows) user field with a default."""
+    val = user.get(key)
+    return default if val is None else val
 
 
 def update_user(user_id: str, patch: dict) -> dict | None:
@@ -233,7 +272,25 @@ def increment_ad_views(ad_id: str):
             ads_db.update({"total_views": ad.get("total_views", 0) + 1}, Q.id == ad_id)
 
 
-def create_ad(title: str, coins_reward: int, daily_limit: int) -> dict:
+def create_ad(
+    title: str,
+    coins_reward: int,
+    daily_limit: int,
+    ad_type: str = "rewarded",
+    media_type: str = "",
+    media_url: str = "",
+    click_url: str = "",
+    watch_seconds: int = 30,
+) -> dict:
+    """
+    Create an ad slot.
+
+    ad_type:
+      - "rewarded"     → Google AdMob rewarded video (reward on AdMob callback)
+      - "custom"       → admin's own image/video (media_url) the user must watch
+                         for `watch_seconds`; coins credited after the server
+                         verifies the elapsed watch time.
+    """
     ad = {
         "id": new_id(),
         "title": title,
@@ -241,6 +298,11 @@ def create_ad(title: str, coins_reward: int, daily_limit: int) -> dict:
         "daily_limit": daily_limit,
         "is_active": True,
         "total_views": 0,
+        "ad_type": ad_type,
+        "media_type": media_type,   # "image" | "video" (custom only)
+        "media_url": media_url,     # image/video URL (custom only)
+        "click_url": click_url,     # where tapping the ad opens (custom only)
+        "watch_seconds": int(watch_seconds),
     }
     with _lock:
         ads_db.insert(ad)
@@ -363,3 +425,186 @@ def has_pending_withdrawal(user_id: str) -> bool:
         return withdrawals_db.contains(
             (Q.user_id == user_id) & (Q.status == "pending")
         )
+
+
+# --------------------------------------------------------------------------- #
+# Festivals
+# --------------------------------------------------------------------------- #
+def all_festivals() -> list:
+    with _lock:
+        rows = festivals_db.all()
+    rows.sort(key=lambda r: r.get("start_date", ""))
+    return rows
+
+
+def get_festival(fid: str):
+    with _lock:
+        return festivals_db.get(Q.id == fid)
+
+
+def create_festival(data: dict) -> dict:
+    fest = {
+        "id": new_id(),
+        "name": data.get("name", "Festival"),
+        "multiplier": float(data.get("multiplier", 2.0)),
+        "start_date": data.get("start_date", ""),
+        "end_date": data.get("end_date", ""),
+        "banner_text": data.get("banner_text", ""),
+        "banner_color": data.get("banner_color", "#FF6B00"),
+        "emoji": data.get("emoji", "🎉"),
+        "is_active": bool(data.get("is_active", False)),
+    }
+    with _lock:
+        festivals_db.insert(fest)
+    return fest
+
+
+def update_festival(fid: str, patch: dict):
+    with _lock:
+        festivals_db.update(patch, Q.id == fid)
+        return festivals_db.get(Q.id == fid)
+
+
+def delete_festival(fid: str):
+    with _lock:
+        festivals_db.remove(Q.id == fid)
+
+
+def active_festival() -> dict | None:
+    """The festival in effect today (IST), if any. A festival counts as active
+    when its is_active flag is on AND today falls in [start_date, end_date]."""
+    today = today_ist()
+    with _lock:
+        rows = festivals_db.all()
+    for f in rows:
+        if not f.get("is_active"):
+            continue
+        start = f.get("start_date", "")
+        end = f.get("end_date", "")
+        if start and today < start:
+            continue
+        if end and today > end:
+            continue
+        return f
+    return None
+
+
+# --------------------------------------------------------------------------- #
+# Milestones (referral)
+# --------------------------------------------------------------------------- #
+def add_milestone_record(user_id: str, milestone: int, badge: str, coins: int) -> dict:
+    rec = {
+        "id": new_id(),
+        "user_id": user_id,
+        "milestone": milestone,
+        "badge": badge,
+        "coins_awarded": coins,
+        "claimed_at": now_iso(),
+    }
+    with _lock:
+        milestones_db.insert(rec)
+    return rec
+
+
+def get_milestones(user_id: str) -> list:
+    with _lock:
+        return milestones_db.search(Q.user_id == user_id)
+
+
+# --------------------------------------------------------------------------- #
+# Spins
+# --------------------------------------------------------------------------- #
+def add_spin_record(user_id: str, prize_coins: int, prize_label: str) -> dict:
+    rec = {
+        "id": new_id(),
+        "user_id": user_id,
+        "prize_coins": prize_coins,
+        "prize_label": prize_label,
+        "spun_at": now_iso(),
+    }
+    with _lock:
+        spins_db.insert(rec)
+    return rec
+
+
+def all_spins() -> list:
+    with _lock:
+        return spins_db.all()
+
+
+def seed_festivals():
+    """Seed the standard Indian festival calendar on first boot (idempotent)."""
+    with _lock:
+        if festivals_db.all():
+            return
+        seed = [
+            ("Diwali Special", 3.0, "10-31", "11-04", "🪔 Diwali Dhamaka! 3x Coins for 5 Days!", "#FF6B00", "🪔"),
+            ("Holi Special", 2.0, "03-14", "03-16", "🎨 Holi Hai! 2x Coins for 3 Days!", "#E91E63", "🎨"),
+            ("Independence Day", 2.0, "08-15", "08-15", "🇮🇳 Freedom Offer! 2x Coins Today!", "#138808", "🇮🇳"),
+            ("Republic Day", 2.0, "01-26", "01-26", "🇮🇳 Republic Day! 2x Coins Today!", "#FF9933", "🇮🇳"),
+            ("New Year", 2.0, "01-01", "01-02", "🎆 New Year Bonanza! 2x Coins!", "#9C27B0", "🎆"),
+            ("Christmas", 2.0, "12-25", "12-26", "🎄 Merry Christmas! 2x Coins!", "#C62828", "🎄"),
+        ]
+        # Apply the current year to the month-day templates.
+        year = today_ist()[:4]
+        for name, mult, sd, ed, text, color, emoji in seed:
+            festivals_db.insert(
+                {
+                    "id": new_id(),
+                    "name": name,
+                    "multiplier": mult,
+                    "start_date": f"{year}-{sd}",
+                    "end_date": f"{year}-{ed}",
+                    "banner_text": text,
+                    "banner_color": color,
+                    "emoji": emoji,
+                    "is_active": True,  # date-gated, so safe to leave on
+                }
+            )
+
+
+# --------------------------------------------------------------------------- #
+# Backup / restore (full database export & import)
+# --------------------------------------------------------------------------- #
+def _backup_tables() -> dict:
+    return {
+        "users": users_db,
+        "transactions": transactions_db,
+        "ads": ads_db,
+        "referrals": referrals_db,
+        "withdrawals": withdrawals_db,
+        "settings": settings_db,
+        "app_build": app_build_db,
+        "festivals": festivals_db,
+        "milestones": milestones_db,
+        "spins": spins_db,
+    }
+
+
+def export_backup() -> dict:
+    """Return a single dict with every table's rows — the full DB snapshot."""
+    with _lock:
+        snapshot = {name: tbl.all() for name, tbl in _backup_tables().items()}
+    snapshot["_meta"] = {"exported_at": now_iso(), "version": 1}
+    return snapshot
+
+
+def restore_backup(data: dict) -> dict:
+    """
+    Replace the DB contents from a backup dict (as produced by export_backup).
+    Writes through the TinyDB instances so in-memory + on-disk stay consistent.
+    Returns a per-table count of restored rows.
+    """
+    tables = _backup_tables()
+    counts = {}
+    with _lock:
+        for name, tbl in tables.items():
+            rows = data.get(name)
+            if not isinstance(rows, list):
+                continue  # leave a table untouched if it's absent/invalid
+            tbl.truncate()
+            for rec in rows:
+                if isinstance(rec, dict):
+                    tbl.insert(rec)
+            counts[name] = len(rows)
+    return counts

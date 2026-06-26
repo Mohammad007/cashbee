@@ -38,6 +38,38 @@ def decode_token(token: str) -> dict | None:
         return None
 
 
+# --------------------------------------------------------------------------- #
+# Custom-ad watch token
+#
+# For custom (admin-uploaded) ads we cannot rely on an AdMob reward callback, so
+# the server issues a signed "watch token" when playback starts. On completion
+# we decode it and require that at least `watch_seconds` have elapsed — making
+# the "must watch the full ad" rule tamper-proof from the client.
+# --------------------------------------------------------------------------- #
+def create_watch_token(user_id: str, ad_id: str) -> str:
+    now = int(time.time())
+    payload = {
+        "k": "watch",
+        "sub": user_id,
+        "ad": ad_id,
+        "iat": now,
+        "exp": now + 1800,  # session valid for 30 min
+    }
+    return jwt.encode(payload, Config.JWT_SECRET, algorithm="HS256")
+
+
+def watch_token_elapsed(token: str, user_id: str, ad_id: str) -> int | None:
+    """Seconds elapsed since the token was issued, or None if it's not a valid
+    watch token for this exact user + ad."""
+    try:
+        p = jwt.decode(token, Config.JWT_SECRET, algorithms=["HS256"])
+    except jwt.PyJWTError:
+        return None
+    if p.get("k") != "watch" or p.get("sub") != user_id or p.get("ad") != ad_id:
+        return None
+    return int(time.time()) - int(p.get("iat", 0))
+
+
 def _extract_token() -> str | None:
     auth = request.headers.get("Authorization", "")
     if auth.startswith("Bearer "):

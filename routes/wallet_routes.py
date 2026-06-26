@@ -68,7 +68,26 @@ def withdraw():
         user["id"], "withdrawal", -coins, f"Withdrawal request ₹{amount_inr}"
     )
 
-    return jsonify({"message": "Withdrawal requested", "withdrawal": w})
+    resp = {"message": "Withdrawal requested", "withdrawal": w}
+
+    # First-withdrawal bonus: credit a one-time bonus the very first time.
+    if not db.get_field(user, "first_withdrawal_done", False):
+        bonus = int(settings.get("first_withdrawal_bonus", 250))
+        db.update_user(user["id"], {"first_withdrawal_done": True})
+        if bonus > 0:
+            import gamification as gm
+
+            gm.credit_earning(
+                user["id"], bonus, "first_withdrawal_bonus",
+                "🎉 First withdrawal bonus",
+            )
+            bonus_inr = _inr(bonus, settings["coin_rate"])
+            resp["first_withdrawal_bonus"] = bonus
+            resp["bonus_message"] = (
+                f"🎉 First Withdrawal Bonus! ₹{bonus_inr} extra credited to your wallet!"
+            )
+
+    return jsonify(resp)
 
 
 @wallet_bp.get("/withdrawals")

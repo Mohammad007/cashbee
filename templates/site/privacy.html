@@ -1,0 +1,70 @@
+{% extends "site/base.html" %}
+{% block title %}Privacy Policy — CashBee{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+  <div class="hero-glow"></div>
+  <div class="container reveal">
+    <span class="pill"><i class="fa-solid fa-shield-halved"></i> Your privacy matters</span>
+    <h1>Privacy <span class="gradient-text">Policy</span></h1>
+    <p class="lead center">Last updated: {{ updated }}</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container legal reveal">
+    <p>This Privacy Policy explains how <strong>CashBee</strong> ("we", "us", "our") collects, uses, and protects your information when you use the CashBee mobile application and website (together, the "Service"). By using CashBee, you agree to this policy.</p>
+
+    <h2>1. Information We Collect</h2>
+    <ul>
+      <li><strong>Phone number</strong> — used to create your account and log you in via a one-time password (OTP) delivered over WhatsApp.</li>
+      <li><strong>Profile information</strong> — a display name you choose (optional).</li>
+      <li><strong>Payment information</strong> — the UPI ID you provide when you request a withdrawal. We do not store your bank login or card details.</li>
+      <li><strong>Earnings &amp; activity</strong> — your coin balance, ads watched, transactions, referral code, and referral relationships.</li>
+      <li><strong>Advertising &amp; device data</strong> — when ads are shown, Google AdMob may collect your device's advertising identifier and related data to serve and measure ads (see Section 4).</li>
+    </ul>
+
+    <h2>2. How We Use Your Information</h2>
+    <ul>
+      <li>To create and secure your account and log you in.</li>
+      <li>To credit coins for watched ads and referrals, and to track your balance.</li>
+      <li>To process withdrawal requests and send payouts to your UPI ID.</li>
+      <li>To operate the referral program and prevent fraud or abuse.</li>
+      <li>To improve, maintain, and support the Service.</li>
+    </ul>
+
+    <h2>3. Login &amp; OTP (WhatsApp)</h2>
+    <p>We verify your phone number using a one-time password sent over WhatsApp through a third-party messaging provider. Only your phone number is shared with the provider for the purpose of delivering and verifying the code.</p>
+
+    <h2>4. Advertising (Google AdMob)</h2>
+    <p>CashBee uses <strong>Google AdMob</strong> to show rewarded and other ads. Google may collect and use data (such as your device's advertising ID, IP address, and ad-interaction data) to provide and personalize ads. This is governed by Google's Privacy Policy:</p>
+    <p><a href="https://policies.google.com/privacy" target="_blank" rel="noopener">https://policies.google.com/privacy</a><br />
+    Learn how Google uses data from apps that use its services: <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener">https://policies.google.com/technologies/partner-sites</a></p>
+
+    <h2>5. Payments (Razorpay)</h2>
+    <p>Withdrawals are processed through <strong>Razorpay</strong>. The UPI ID you provide is shared with Razorpay solely to send your payout. Razorpay's handling of this data is governed by their own privacy policy.</p>
+
+    <h2>6. How We Share Information</h2>
+    <p>We do <strong>not</strong> sell your personal information. We share data only with the service providers needed to run CashBee — the WhatsApp OTP provider (phone number), Google AdMob (advertising data), and Razorpay (UPI ID for payouts) — or where required by law.</p>
+
+    <h2>7. Data Retention</h2>
+    <p>We keep your account information for as long as your account is active. If you delete your account, we remove your personal data except where we must retain certain records (for example, completed payout records) to comply with legal or financial obligations.</p>
+
+    <h2>8. Account &amp; Data Deletion</h2>
+    <p>You can request deletion of your account and associated personal data at any time by emailing us at <a href="mailto:{{ support_email }}">{{ support_email }}</a> from your registered details. We will process your request within a reasonable time.</p>
+
+    <h2>9. Security</h2>
+    <p>We take reasonable technical and organizational measures to protect your data. Coin balances and withdrawals are verified server-side. However, no method of transmission or storage is 100% secure.</p>
+
+    <h2>10. Children's Privacy</h2>
+    <p>CashBee is not intended for children under 18. We do not knowingly collect personal information from children. If you believe a child has provided us data, contact us and we will delete it.</p>
+
+    <h2>11. Changes to This Policy</h2>
+    <p>We may update this Privacy Policy from time to time. Changes are effective when posted on this page with an updated "Last updated" date.</p>
+
+    <h2>12. Contact Us</h2>
+    <p>For any questions about this Privacy Policy or your data, contact us at:<br />
+    <a href="mailto:{{ support_email }}">{{ support_email }}</a></p>
+  </div>
+</section>
+{% endblock %}

@@ -148,6 +148,11 @@ input, button, select { font-family: inherit; }
 .chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 18px; }
 .chart-wide { grid-column: 1 / -1; }
 @media (max-width: 900px) { .chart-grid { grid-template-columns: 1fr; } }
+/* Fixed-height box so Chart.js (maintainAspectRatio:false) can't grow unbounded. */
+.chart-box { position: relative; height: 240px; width: 100%; }
+.chart-box.tall { height: 280px; }
+.chart-box canvas { position: absolute; inset: 0; width: 100% !important; height: 100% !important; }
+@media (max-width: 560px) { .chart-box, .chart-box.tall { height: 220px; } }
 .muted { color: var(--muted); font-size: .82rem; }
 .link { color: var(--brand-2); font-weight: 600; font-size: .85rem; }
 

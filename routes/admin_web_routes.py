@@ -211,10 +211,16 @@ def ads():
 @admin_web_bp.post("/ads/create")
 @login_required
 def create_ad():
+    ad_type = (request.form.get("ad_type") or "rewarded").strip()
     db.create_ad(
         title=(request.form.get("title") or "Rewarded Ad").strip(),
         coins_reward=int(request.form.get("coins_reward") or 10),
         daily_limit=int(request.form.get("daily_limit") or 10),
+        ad_type=ad_type,
+        media_type=(request.form.get("media_type") or "").strip(),
+        media_url=(request.form.get("media_url") or "").strip(),
+        click_url=(request.form.get("click_url") or "").strip(),
+        watch_seconds=int(request.form.get("watch_seconds") or 30),
     )
     flash("Ad campaign created.", "success")
     return redirect(url_for("admin_web.ads"))
@@ -229,6 +235,15 @@ def update_ad(ad_id):
         "daily_limit": int(request.form.get("daily_limit") or 10),
         "is_active": request.form.get("is_active") == "1",
     }
+    # Custom-ad fields are only present when editing a custom ad.
+    if request.form.get("ad_type"):
+        patch["ad_type"] = request.form.get("ad_type").strip()
+    for f in ("media_type", "media_url", "click_url"):
+        if f in request.form:
+            patch[f] = (request.form.get(f) or "").strip()
+    if request.form.get("watch_seconds"):
+        patch["watch_seconds"] = int(request.form.get("watch_seconds"))
+
     if db.update_ad(ad_id, patch):
         flash("Ad campaign updated.", "success")
     else:
@@ -391,7 +406,7 @@ def settings():
         patch["maintenance_mode"] = request.form.get("maintenance_mode") == "1"
 
         # AdMob ad unit IDs (strings) + flags — served to the app at runtime.
-        for key in ("admob_banner_id", "admob_interstitial_id", "admob_rewarded_id"):
+        for key in ("admob_rewarded_id",):
             if request.form.get(key) is not None:
                 patch[key] = (request.form.get(key) or "").strip()
         patch["ads_enabled"] = request.form.get("ads_enabled") == "1"
@@ -460,3 +475,207 @@ def upload_app():
         "success",
     )
     return redirect(url_for("admin_web.settings"))
+
+
+# --------------------------------------------------------------------------- #
+# Festivals (limited-time coin multipliers)
+# --------------------------------------------------------------------------- #
+@admin_web_bp.get("/festivals")
+@login_required
+def festivals():
+    return render_template(
+        "admin/festivals.html",
+        festivals=db.all_festivals(),
+        active_festival=db.active_festival(),
+        active="festivals",
+    )
+
+
+@admin_web_bp.post("/festivals/create")
+@login_required
+def create_festival():
+    db.create_festival(
+        {
+            "name": (request.form.get("name") or "Festival").strip(),
+            "multiplier": float(request.form.get("multiplier") or 2.0),
+            "start_date": (request.form.get("start_date") or "").strip(),
+            "end_date": (request.form.get("end_date") or "").strip(),
+            "banner_text": (request.form.get("banner_text") or "").strip(),
+            "banner_color": (request.form.get("banner_color") or "#FF6B00").strip(),
+            "emoji": (request.form.get("emoji") or "🎉").strip(),
+            "is_active": request.form.get("is_active") == "1",
+        }
+    )
+    flash("Festival created.", "success")
+    return redirect(url_for("admin_web.festivals"))
+
+
+@admin_web_bp.post("/festivals/<fid>/toggle")
+@login_required
+def toggle_festival(fid):
+    fest = db.get_festival(fid)
+    if fest:
+        db.update_festival(fid, {"is_active": not fest.get("is_active")})
+        flash("Festival updated.", "success")
+    return redirect(url_for("admin_web.festivals"))
+
+
+@admin_web_bp.post("/festivals/<fid>/delete")
+@login_required
+def delete_festival(fid):
+    db.delete_festival(fid)
+    flash("Festival deleted.", "success")
+    return redirect(url_for("admin_web.festivals"))
+
+
+@admin_web_bp.post("/festivals/flash")
+@login_required
+def flash_offer():
+    """Instant flash offer — 2x coins for the next 2 hours (today, IST)."""
+    from datetime import timedelta
+
+    today = db.today_ist()
+    mult = float(request.form.get("multiplier") or 2.0)
+    hours = int(request.form.get("hours") or 2)
+    end = datetime.now(db.IST) + timedelta(hours=hours)
+    db.create_festival(
+        {
+            "name": f"Flash {mult:g}x Offer",
+            "multiplier": mult,
+            "start_date": today,
+            "end_date": end.strftime("%Y-%m-%d"),
+            "banner_text": f"⚡ Flash Offer! {mult:g}x Coins for {hours}h only!",
+            "banner_color": "#7C3AED",
+            "emoji": "⚡",
+            "is_active": True,
+        }
+    )
+    flash(f"Flash offer live: {mult:g}x for {hours}h.", "success")
+    return redirect(url_for("admin_web.festivals"))
+
+
+# --------------------------------------------------------------------------- #
+# Lucky-spin analytics
+# --------------------------------------------------------------------------- #
+@admin_web_bp.get("/spins")
+@login_required
+def spins():
+    spins = db.all_spins()
+    today = db.today_str()
+    today_spins = [s for s in spins if s.get("spun_at", "")[:10] == today]
+    total_coins = sum(s.get("prize_coins", 0) for s in spins)
+
+    jackpots = [s for s in spins if s.get("prize_coins", 0) >= 250]
+    jackpots.sort(key=lambda s: s.get("spun_at", ""), reverse=True)
+    for j in jackpots[:50]:
+        u = db.get_user_by_id(j["user_id"])
+        j["user_phone"] = u["phone"] if u else "—"
+
+    # Spin vs ad earnings ratio
+    spin_earn = total_coins
+    ad_earn = sum(
+        t["coins"] for t in db.transactions_db.all() if t.get("type") == "ad_earn"
+    )
+    return render_template(
+        "admin/spins.html",
+        total_spins=len(spins),
+        today_spins=len(today_spins),
+        total_coins=total_coins,
+        jackpots=jackpots[:50],
+        spin_earn=spin_earn,
+        ad_earn=ad_earn,
+        active="spins",
+    )
+
+
+# --------------------------------------------------------------------------- #
+# Gamification settings (streak rewards, first-withdrawal bonus, spin weights)
+# --------------------------------------------------------------------------- #
+@admin_web_bp.route("/gamification", methods=["GET", "POST"])
+@login_required
+def gamification():
+    settings = db.get_settings()
+    if request.method == "POST":
+        patch = {}
+        # 7 streak day rewards
+        rewards = []
+        for i in range(7):
+            rewards.append(int(request.form.get(f"streak_{i}") or 0))
+        patch["streak_rewards"] = rewards
+        patch["first_withdrawal_bonus"] = int(
+            request.form.get("first_withdrawal_bonus") or 0
+        )
+        # Spin prize weights (labels/coins fixed; admin tunes the odds)
+        prizes = [dict(p) for p in settings.get("spin_prizes", [])]
+        for i, p in enumerate(prizes):
+            p["weight"] = int(request.form.get(f"spin_weight_{i}") or p["weight"])
+        patch["spin_prizes"] = prizes
+        db.update_settings(patch)
+        flash("Gamification settings saved.", "success")
+        return redirect(url_for("admin_web.gamification"))
+
+    return render_template(
+        "admin/gamification.html",
+        settings=db.get_settings(),
+        levels=Config.LEVELS,
+        milestones=Config.MILESTONES,
+        active="gamification",
+    )
+
+
+# --------------------------------------------------------------------------- #
+# Database backup — export & import the full TinyDB store
+# --------------------------------------------------------------------------- #
+@admin_web_bp.get("/backup")
+@login_required
+def backup():
+    tables = db.export_backup()
+    counts = {k: len(v) for k, v in tables.items() if isinstance(v, list)}
+    return render_template("admin/backup.html", counts=counts, active="backup")
+
+
+@admin_web_bp.get("/backup/export")
+@login_required
+def backup_export():
+    import json
+    from flask import Response
+
+    data = db.export_backup()
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
+    body = json.dumps(data, indent=2, ensure_ascii=False)
+    return Response(
+        body,
+        mimetype="application/json",
+        headers={
+            "Content-Disposition": f"attachment; filename=cashbee-backup-{stamp}.json"
+        },
+    )
+
+
+@admin_web_bp.post("/backup/import")
+@login_required
+def backup_import():
+    import json
+
+    file = request.files.get("backup")
+    if not file or not file.filename:
+        flash("Please choose a backup .json file to import.", "error")
+        return redirect(url_for("admin_web.backup"))
+    if not file.filename.lower().endswith(".json"):
+        flash("Only .json backup files are allowed.", "error")
+        return redirect(url_for("admin_web.backup"))
+
+    try:
+        data = json.loads(file.read().decode("utf-8"))
+    except (ValueError, UnicodeDecodeError):
+        flash("Invalid backup file — could not parse JSON.", "error")
+        return redirect(url_for("admin_web.backup"))
+
+    if not isinstance(data, dict) or "users" not in data:
+        flash("This doesn't look like a CashBee backup file.", "error")
+        return redirect(url_for("admin_web.backup"))
+
+    counts = db.restore_backup(data)
+    total = sum(counts.values())
+    flash(f"Backup restored — {total} records across {len(counts)} tables.", "success")
+    return redirect(url_for("admin_web.backup"))

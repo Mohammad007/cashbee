@@ -1,0 +1,82 @@
+{% extends "admin/base.html" %}
+{% block title %}Festivals{% endblock %}
+{% block heading %}Festival Offers{% endblock %}
+{% block subheading %}Limited-time coin multipliers &amp; flash offers{% endblock %}
+
+{% block content %}
+<style>
+  .gx-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; align-items: end; }
+  .gx-form label { display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600; color: #475569; }
+  .gx-form input, .gx-form select { padding: 9px 11px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; }
+  .gx-form .full { grid-column: 1 / -1; }
+  .gx-row { display: flex; gap: 16px; align-items: flex-end; flex-wrap: wrap; }
+  .gx-row label { display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600; color: #475569; }
+  .gx-row input, .gx-row select { padding: 9px 11px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; min-width: 90px; }
+  .gx-row .btn { height: 40px; }
+</style>
+
+{% if active_festival %}
+<div class="card" style="border-left:4px solid {{ active_festival.banner_color }}">
+  <strong>{{ active_festival.emoji }} Live now: {{ active_festival.name }}</strong>
+  <span class="muted"> — {{ active_festival.multiplier }}x coins · ends {{ active_festival.end_date }}</span>
+</div>
+{% endif %}
+
+<div class="card">
+  <div class="card-head"><h3>⚡ Instant Flash Offer</h3><span class="muted">Surprise event, live immediately</span></div>
+  <form method="post" action="{{ url_for('admin_web.flash_offer') }}" class="gx-row">
+    <label>Multiplier
+      <select name="multiplier"><option value="2">2x</option><option value="3">3x</option><option value="5">5x</option></select>
+    </label>
+    <label>Duration (hours)<input type="number" name="hours" value="2" min="1" max="48" /></label>
+    <button class="btn btn-primary"><i class="fa-solid fa-bolt"></i> Activate flash offer</button>
+  </form>
+</div>
+
+<div class="card">
+  <div class="card-head"><h3>Create a festival</h3></div>
+  <form method="post" action="{{ url_for('admin_web.create_festival') }}" class="gx-form">
+    <label>Name<input type="text" name="name" placeholder="Diwali Special" required /></label>
+    <label>Multiplier<input type="number" step="0.5" name="multiplier" value="2" min="1" required /></label>
+    <label>Emoji<input type="text" name="emoji" value="🎉" maxlength="4" /></label>
+    <label>Banner color<input type="color" name="banner_color" value="#FF6B00" /></label>
+    <label>Start date<input type="date" name="start_date" required /></label>
+    <label>End date<input type="date" name="end_date" required /></label>
+    <label class="full">Banner text<input type="text" name="banner_text" placeholder="🪔 Diwali Dhamaka! 3x Coins for 5 Days!" /></label>
+    <label class="full" style="flex-direction:row;align-items:center;gap:8px">
+      <input type="checkbox" name="is_active" value="1" checked style="width:auto" /> Active (still date-gated)
+    </label>
+    <div class="full"><button class="btn btn-primary"><i class="fa-solid fa-plus"></i> Create festival</button></div>
+  </form>
+</div>
+
+<div class="card">
+  <div class="card-head"><h3>All festivals</h3><span class="muted">{{ festivals|length }} total</span></div>
+  {% if festivals %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Festival</th><th>Multiplier</th><th>Dates</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody>
+        {% for f in festivals %}
+        <tr>
+          <td>{{ f.emoji }} <strong>{{ f.name }}</strong><br><span class="muted" style="font-size:12px">{{ f.banner_text }}</span></td>
+          <td>{{ f.multiplier }}x</td>
+          <td>{{ f.start_date }} → {{ f.end_date }}</td>
+          <td>{% if f.is_active %}<span class="badge badge-paid">On</span>{% else %}<span class="badge badge-pending">Off</span>{% endif %}</td>
+          <td class="actions">
+            <form method="post" action="{{ url_for('admin_web.toggle_festival', fid=f.id) }}" style="display:inline">
+              <button class="btn btn-xs btn-ghost">{{ 'Disable' if f.is_active else 'Enable' }}</button>
+            </form>
+            <form method="post" action="{{ url_for('admin_web.delete_festival', fid=f.id) }}" style="display:inline"
+                  onsubmit="return confirm('Delete {{ f.name }}?');">
+              <button class="btn btn-xs btn-danger"><i class="fa-solid fa-trash-can"></i></button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}<p class="empty">No festivals yet.</p>{% endif %}
+</div>
+{% endblock %}

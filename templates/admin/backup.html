@@ -1,0 +1,52 @@
+{% extends "admin/base.html" %}
+{% block title %}Database Backup{% endblock %}
+{% block heading %}Database Backup{% endblock %}
+{% block subheading %}Export a full snapshot or restore from a backup file{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-head">
+    <h3><i class="fa-solid fa-download"></i> Export</h3>
+    <span class="muted">Download the entire database as one JSON file</span>
+  </div>
+  <p class="muted" style="margin-bottom:16px">
+    Includes users, transactions, ads, referrals, withdrawals, settings, festivals,
+    milestones and spins. Keep this file safe — it contains all live data.
+  </p>
+  <div class="table-wrap" style="margin-bottom:16px">
+    <table class="table">
+      <thead><tr><th>Table</th><th>Records</th></tr></thead>
+      <tbody>
+        {% for name, n in counts.items() %}
+        <tr><td>{{ name }}</td><td>{{ '{:,}'.format(n) }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <a href="{{ url_for('admin_web.backup_export') }}" class="btn btn-primary">
+    <i class="fa-solid fa-file-arrow-down"></i> Download backup (.json)
+  </a>
+</div>
+
+<div class="card">
+  <div class="card-head">
+    <h3><i class="fa-solid fa-upload"></i> Import / Restore</h3>
+    <span class="muted">Replace the database from a backup file</span>
+  </div>
+  <p class="muted" style="margin-bottom:16px;color:#b45309">
+    <i class="fa-solid fa-triangle-exclamation"></i>
+    <strong>Warning:</strong> importing <u>overwrites</u> all current data for every
+    table found in the file. This cannot be undone — export a fresh backup first.
+  </p>
+  <form method="post" action="{{ url_for('admin_web.backup_import') }}"
+        enctype="multipart/form-data"
+        onsubmit="return confirm('This will OVERWRITE the current database with the uploaded backup. Continue?');"
+        class="upload-form">
+    <label class="field">
+      <span>Backup file (.json)</span>
+      <input type="file" name="backup" accept=".json,application/json" required />
+    </label>
+    <button class="btn btn-danger"><i class="fa-solid fa-database"></i> Restore from backup</button>
+  </form>
+</div>
+{% endblock %}

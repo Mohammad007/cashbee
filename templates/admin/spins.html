@@ -1,0 +1,35 @@
+{% extends "admin/base.html" %}
+{% block title %}Lucky Spins{% endblock %}
+{% block heading %}Lucky Spins{% endblock %}
+{% block subheading %}Spin activity &amp; jackpot winners{% endblock %}
+
+{% block content %}
+<div class="stat-grid">
+  <div class="stat-card"><span class="stat-label">Spins today</span><span class="stat-value">{{ '{:,}'.format(today_spins) }}</span></div>
+  <div class="stat-card"><span class="stat-label">Total spins</span><span class="stat-value">{{ '{:,}'.format(total_spins) }}</span></div>
+  <div class="stat-card"><span class="stat-label">Coins given (spins)</span><span class="stat-value">{{ '{:,}'.format(total_coins) }}</span></div>
+  <div class="stat-card"><span class="stat-label">Spin vs Ad coins</span>
+    <span class="stat-value">{{ ((spin_earn / ad_earn * 100) | round(1)) if ad_earn else 0 }}%</span></div>
+</div>
+
+<div class="card">
+  <div class="card-head"><h3>🏆 Jackpot winners (≥ 250 coins)</h3><span class="muted">{{ jackpots|length }} shown</span></div>
+  {% if jackpots %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>User</th><th>Prize</th><th>Coins</th><th>When</th></tr></thead>
+      <tbody>
+        {% for j in jackpots %}
+        <tr>
+          <td>{{ j.user_phone }}</td>
+          <td><span class="badge badge-paid">{{ j.prize_label }}</span></td>
+          <td><strong>{{ j.prize_coins }}</strong></td>
+          <td class="muted">{{ j.spun_at[:16].replace('T', ' ') }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}<p class="empty">No jackpots yet.</p>{% endif %}
+</div>
+{% endblock %}

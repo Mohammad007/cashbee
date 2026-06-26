@@ -33,6 +33,7 @@ from routes.wallet_routes import wallet_bp
 from routes.admin_routes import admin_bp
 from routes.site_routes import site_bp
 from routes.admin_web_routes import admin_web_bp
+from routes.gamification_routes import gami_bp
 
 
 def create_app() -> Flask:
@@ -47,6 +48,7 @@ def create_app() -> Flask:
     # Seed defaults so the app is usable on first boot.
     db.get_settings()
     db.seed_default_ad()
+    db.seed_festivals()
 
     # --- JSON REST API (mobile app) ---
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
@@ -55,6 +57,7 @@ def create_app() -> Flask:
     app.register_blueprint(referral_bp, url_prefix="/api/referral")
     app.register_blueprint(wallet_bp, url_prefix="/api/wallet")
     app.register_blueprint(admin_bp, url_prefix="/api/admin")
+    app.register_blueprint(gami_bp, url_prefix="/api")
 
     # --- Server-rendered web (website + admin console) ---
     app.register_blueprint(site_bp)            # /

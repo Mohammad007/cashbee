@@ -10,7 +10,8 @@ from datetime import datetime, timezone
 from flask import Blueprint, request, jsonify, g
 
 import database.db as db
-from services import auth_required
+import gamification as gm
+from services import auth_required, create_watch_token, watch_token_elapsed
 from extensions import limiter
 
 ad_bp = Blueprint("ads", __name__)
@@ -22,10 +23,29 @@ def available_ads():
     return jsonify({"ads": ads})
 
 
-# Google's official TEST ad units (always fill) — used when use_test_ads is on.
+@ad_bp.post("/start")
+@auth_required
+def start_watch():
+    """
+    Begin a custom-ad watch session. Returns a signed watch token that
+    /watch-complete checks to confirm the user watched the full duration.
+    (Rewarded/interstitial ads don't need this — AdMob guarantees the view.)
+    """
+    data = request.get_json(silent=True) or {}
+    ad_id = (data.get("ad_id") or "").strip()
+    ad = db.get_ad(ad_id)
+    if not ad or not ad.get("is_active"):
+        return jsonify({"error": "Ad not available"}), 404
+    return jsonify(
+        {
+            "watch_token": create_watch_token(g.user["id"], ad_id),
+            "watch_seconds": int(ad.get("watch_seconds") or 30),
+        }
+    )
+
+
+# Google's official TEST rewarded unit (always fills) — used when use_test_ads is on.
 _TEST_REWARDED = "ca-app-pub-3940256099942544/5224354917"
-_TEST_INTERSTITIAL = "ca-app-pub-3940256099942544/1033173712"
-_TEST_BANNER = "ca-app-pub-3940256099942544/6300978111"
 
 
 @ad_bp.get("/config")
@@ -43,8 +63,6 @@ def ads_config():
             "ads_enabled": bool(s.get("ads_enabled", True)),
             "use_test_ads": test,
             "rewarded_ad_unit_id": _TEST_REWARDED if test else (s.get("admob_rewarded_id") or ""),
-            "interstitial_ad_unit_id": _TEST_INTERSTITIAL if test else (s.get("admob_interstitial_id") or ""),
-            "banner_ad_unit_id": _TEST_BANNER if test else (s.get("admob_banner_id") or ""),
         }
     )
 
@@ -63,6 +81,17 @@ def watch_complete():
     settings = db.get_settings()
     if settings.get("maintenance_mode"):
         return jsonify({"error": "Service under maintenance"}), 503
+
+    # Custom ads have no AdMob reward callback, so verify the signed watch token:
+    # the user must have actually spent `watch_seconds` watching.
+    if ad.get("ad_type") == "custom":
+        watch_seconds = int(ad.get("watch_seconds") or 30)
+        token = (data.get("watch_token") or "").strip()
+        elapsed = watch_token_elapsed(token, g.user["id"], ad_id)
+        if elapsed is None:
+            return jsonify({"error": "Invalid watch session. Please retry."}), 400
+        if elapsed < watch_seconds - 2:  # 2s grace for network/render lag
+            return jsonify({"error": "Please watch the full ad to earn coins."}), 400
 
     user = db.get_user_by_id(g.user["id"])
     today = db.today_str()
@@ -86,20 +115,31 @@ def watch_complete():
         except ValueError:
             pass
 
-    reward = ad["coins_reward"]
+    base = ad["coins_reward"]
 
-    # Credit the viewer.
+    # Multipliers: base × user level multiplier × active festival multiplier.
+    level_mult = float(db.get_field(user, "coin_multiplier", 1.0))
+    festival = db.active_festival()
+    festival_mult = float(festival["multiplier"]) if festival else 1.0
+    total_mult = level_mult * festival_mult
+    reward = max(1, round(base * total_mult))
+
+    # Mark the watch (daily counter + cooldown) and hand out a spin ticket.
     db.update_user(
         user["id"],
         {
             "ads_watched_today": watched_today + 1,
             "last_ad_date": today,
             "last_ad_time": db.now_iso(),
+            "spin_tickets": db.get_field(user, "spin_tickets", 0) + 1,
         },
     )
-    updated = db.add_coins(user["id"], reward)
-    db.add_transaction(user["id"], "ad_earn", reward, f"Watched: {ad['title']}")
     db.increment_ad_views(ad_id)
+
+    # Credit via the central earning path (updates lifetime + level).
+    updated, level_up, new_level = gm.credit_earning(
+        user["id"], reward, "ad_earn", f"Watched: {ad['title']}"
+    )
 
     # Referral passive income: instantly credit the referrer their %.
     referrer_bonus = 0
@@ -109,11 +149,8 @@ def watch_complete():
             percent = settings["referral_bonus_percent"]
             referrer_bonus = round(reward * percent / 100)
             if referrer_bonus > 0:
-                db.add_coins(referrer["id"], referrer_bonus)
-                db.add_transaction(
-                    referrer["id"],
-                    "referral_earn",
-                    referrer_bonus,
+                gm.credit_earning(
+                    referrer["id"], referrer_bonus, "referral_earn",
                     f"{percent}% of {user['phone']}'s ad earning",
                 )
                 db.add_referral_earning(referrer["id"], user["id"], referrer_bonus)
@@ -125,6 +162,19 @@ def watch_complete():
             "referrer_bonus": referrer_bonus,
             "ads_watched_today": watched_today + 1,
             "daily_limit": daily_limit,
+            # Earnings breakdown for the UI ("10 × 1.5 × 3.0 = 45")
+            "breakdown": {
+                "base": base,
+                "level_multiplier": level_mult,
+                "festival_multiplier": festival_mult,
+                "total_multiplier": round(total_mult, 2),
+            },
+            # Level
+            "level_up": level_up,
+            "new_level": new_level,
+            # Spin ticket
+            "spin_tickets_earned": 1,
+            "total_tickets": db.get_field(updated, "spin_tickets", 0),
         }
     )
 

@@ -28,8 +28,12 @@
           ('dashboard', 'fa-gauge-high', 'Dashboard', url_for('admin_web.dashboard')),
           ('users', 'fa-users', 'Users', url_for('admin_web.users')),
           ('ads', 'fa-rectangle-ad', 'Ad Campaigns', url_for('admin_web.ads')),
+          ('festivals', 'fa-gift', 'Festivals', url_for('admin_web.festivals')),
+          ('spins', 'fa-dice', 'Lucky Spins', url_for('admin_web.spins')),
+          ('gamification', 'fa-trophy', 'Gamification', url_for('admin_web.gamification')),
           ('withdrawals', 'fa-money-bill-transfer', 'Withdrawals', url_for('admin_web.withdrawals')),
           ('referrals', 'fa-share-nodes', 'Referrals', url_for('admin_web.referrals')),
+          ('backup', 'fa-database', 'Backup', url_for('admin_web.backup')),
           ('settings', 'fa-gear', 'Settings', url_for('admin_web.settings'))
         ] %}
         {% for key, icon, label, href in items %}

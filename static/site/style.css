@@ -262,3 +262,13 @@ h2 { font-size: clamp(1.9rem, 4vw, 2.8rem); font-weight: 700; }
 .store-emoji i { font-size: 1.5rem; }
 .faq-plus i { font-size: 1rem; pointer-events: none; }
 .error-icon { font-size: 4.5rem; color: var(--brand); margin-bottom: 10px; }
+
+/* ---------- Legal pages (privacy / terms) ---------- */
+.legal { max-width: 800px; margin: 0 auto; color: var(--ink-2); }
+.legal h2 { font-size: 1.3rem; margin: 34px 0 12px; color: var(--ink); }
+.legal p { margin-bottom: 14px; line-height: 1.75; }
+.legal ul { margin: 0 0 16px 1.2rem; display: grid; gap: 8px; }
+.legal li { line-height: 1.7; }
+.legal a { color: var(--brand-2); font-weight: 600; word-break: break-word; }
+.legal a:hover { text-decoration: underline; }
+.legal strong { color: var(--ink); }

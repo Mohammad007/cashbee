@@ -1,0 +1,75 @@
+{% extends "admin/base.html" %}
+{% block title %}Gamification{% endblock %}
+{% block heading %}Gamification Settings{% endblock %}
+{% block subheading %}Streak rewards, spin odds &amp; bonuses{% endblock %}
+
+{% block content %}
+<form method="post" class="settings-form">
+  <div class="card">
+    <div class="card-head"><h3>🔥 Daily Streak Rewards</h3><span class="muted">coins per day (cycle of 7)</span></div>
+    <div class="field-grid">
+      {% for i in range(7) %}
+      <label><span>Day {{ i + 1 }}{{ ' (Jackpot)' if i == 6 else '' }}</span>
+        <input type="number" name="streak_{{ i }}" value="{{ settings.streak_rewards[i] }}" min="0" /></label>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h3>💸 First Withdrawal Bonus</h3></div>
+    <div class="field-grid">
+      <label><span>Bonus coins (one-time)</span>
+        <input type="number" name="first_withdrawal_bonus" value="{{ settings.first_withdrawal_bonus }}" min="0" /></label>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h3>🎰 Lucky Spin Odds</h3><span class="muted">higher weight = more likely</span></div>
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Prize</th><th>Coins</th><th>Weight</th></tr></thead>
+        <tbody>
+          {% for p in settings.spin_prizes %}
+          <tr>
+            <td>{{ p.label }}</td>
+            <td>{{ p.coins }}</td>
+            <td style="max-width:120px"><input type="number" name="spin_weight_{{ loop.index0 }}" value="{{ p.weight }}" min="0" style="width:90px;padding:6px;border:1px solid #cbd5e1;border-radius:6px" /></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="form-actions"><button class="btn btn-primary btn-lg">Save gamification settings</button></div>
+  <br>
+</form>
+
+<div class="card">
+  <div class="card-head"><h3>🏅 Levels</h3><span class="muted">read-only (defined in config)</span></div>
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Level</th><th>Name</th><th>From (lifetime coins)</th><th>Multiplier</th></tr></thead>
+      <tbody>
+        {% for minc, lv, name, mult in levels|sort(attribute='1') %}
+        <tr><td>{{ lv }}</td><td>{{ name }}</td><td>{{ '{:,}'.format(minc) }}</td><td>{{ mult }}x</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head"><h3>👥 Referral Milestones</h3><span class="muted">read-only (defined in config)</span></div>
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Friends</th><th>Reward</th><th>Badge</th></tr></thead>
+      <tbody>
+        {% for friends, coins, badge in milestones %}
+        <tr><td>{{ friends }}</td><td>{{ '{:,}'.format(coins) }} coins</td><td><span class="badge">{{ badge }}</span></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

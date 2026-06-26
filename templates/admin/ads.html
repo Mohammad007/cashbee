@@ -1,49 +1,105 @@
 {% extends "admin/base.html" %}
 {% block title %}Ad Campaigns{% endblock %}
 {% block heading %}Ad Campaigns{% endblock %}
-{% block subheading %}Manage rewarded-ad slots and rewards{% endblock %}
+{% block subheading %}Create and manage rewarded &amp; custom ads{% endblock %}
 
 {% block content %}
+<style>
+  .ad-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 16px; align-items: end; }
+  .ad-form label { display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600; color: #475569; }
+  .ad-form label span { font-weight: 600; }
+  .ad-form input, .ad-form select { padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; background: #fff; }
+  .ad-form input:focus, .ad-form select:focus { outline: none; border-color: #f5a623; box-shadow: 0 0 0 3px rgba(245,166,35,.15); }
+  .ad-form .full { grid-column: 1 / -1; }
+  .ad-custom { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 16px; padding: 14px; border: 1px dashed #cbd5e1; border-radius: 10px; background: #f8fafc; }
+  .ad-custom.is-hidden { display: none; }
+  .ad-form .actions-row { grid-column: 1 / -1; display: flex; justify-content: flex-end; }
+
+  /* Edit modal */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(15,23,42,.55); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 20px; }
+  .modal-overlay[hidden] { display: none; }
+  .modal-card { background: #fff; border-radius: 14px; width: 100%; max-width: 560px; max-height: 90vh; overflow: auto; padding: 22px; }
+  .modal-card h3 { margin: 0 0 16px; }
+</style>
+
+<!-- ============================ CREATE ============================ -->
 <div class="card">
   <div class="card-head"><h3>Create a campaign</h3></div>
-  <form method="post" action="{{ url_for('admin_web.create_ad') }}" class="inline-form">
+  <form method="post" action="{{ url_for('admin_web.create_ad') }}" class="ad-form" data-ad-form>
     <label><span>Title</span><input type="text" name="title" placeholder="Rewarded Video" required /></label>
+    <label><span>Type</span>
+      <select name="ad_type" data-type>
+        <option value="rewarded">Rewarded (AdMob)</option>
+        <option value="custom">Custom (your image/video)</option>
+      </select>
+    </label>
     <label><span>Coins reward</span><input type="number" name="coins_reward" value="10" min="1" required /></label>
     <label><span>Daily limit</span><input type="number" name="daily_limit" value="10" min="1" required /></label>
-    <button class="btn btn-primary"><i class="fa-solid fa-plus"></i> Create</button>
+
+    <div class="ad-custom is-hidden" data-custom>
+      <label><span>Media type</span>
+        <select name="media_type" data-mediatype>
+          <option value="video">Video (≤ 30s)</option>
+          <option value="image">Image</option>
+        </select>
+      </label>
+      <label><span>Watch seconds</span><input type="number" name="watch_seconds" value="30" min="5" max="120" /></label>
+      <label class="full"><span>Media URL (direct link to image/video)</span>
+        <input type="url" name="media_url" placeholder="https://.../ad.mp4 or .jpg" /></label>
+      <label class="full"><span>Click URL (where tapping opens)</span>
+        <input type="url" name="click_url" placeholder="https://advertiser.example.com" /></label>
+    </div>
+
+    <div class="actions-row">
+      <button class="btn btn-primary"><i class="fa-solid fa-plus"></i> Create campaign</button>
+    </div>
   </form>
+  <p class="muted" style="margin-top:10px;font-size:13px">
+    <strong>Custom</strong> ads: host the image/video anywhere (a direct URL) — the user must watch the full
+    duration to earn. <strong>Rewarded</strong> uses your AdMob rewarded unit ID from
+    <a href="{{ url_for('admin_web.settings') }}">Settings</a>.
+  </p>
 </div>
 
+<!-- ============================ LIST ============================ -->
 <div class="card">
   <div class="card-head"><h3>All campaigns</h3><span class="muted">{{ ads|length }} total</span></div>
   {% if ads %}
   <div class="table-wrap">
     <table class="table">
-      <thead><tr><th>Title</th><th>Reward</th><th>Daily limit</th><th>Total views</th><th>Status</th><th>Actions</th></tr></thead>
+      <thead><tr><th>Title</th><th>Type</th><th>Reward</th><th>Daily limit</th><th>Views</th><th>Status</th><th>Actions</th></tr></thead>
       <tbody>
         {% for ad in ads %}
         <tr>
-          <td><strong>{{ ad.title }}</strong></td>
+          <td>
+            <strong>{{ ad.title }}</strong>
+            {% if ad.get('ad_type') == 'custom' and ad.get('media_url') %}
+            <br><a class="muted" href="{{ ad.media_url }}" target="_blank" style="font-size:12px">{{ ad.get('media_type','media') }} ↗</a>
+            {% endif %}
+          </td>
+          <td><span class="badge">{{ ad.get('ad_type', 'rewarded')|capitalize }}</span></td>
           <td>{{ ad.coins_reward }} coins</td>
-          <td>{{ ad.daily_limit }}</td>
+          <td>{{ ad.daily_limit }}{% if ad.get('ad_type') == 'custom' %} · {{ ad.get('watch_seconds', 30) }}s{% endif %}</td>
           <td>{{ '{:,}'.format(ad.get('total_views', 0)) }}</td>
           <td>{% if ad.is_active %}<span class="badge badge-paid">Active</span>{% else %}<span class="badge badge-pending">Paused</span>{% endif %}</td>
           <td class="actions">
-            <button type="button" class="btn btn-xs btn-ghost js-edit-ad"
+            <button type="button" class="btn btn-xs btn-ghost js-edit"
                     data-action="{{ url_for('admin_web.update_ad', ad_id=ad.id) }}"
                     data-title="{{ ad.title }}"
+                    data-type="{{ ad.get('ad_type', 'rewarded') }}"
                     data-coins="{{ ad.coins_reward }}"
                     data-limit="{{ ad.daily_limit }}"
-                    data-active="{{ '1' if ad.is_active else '0' }}">
+                    data-active="{{ '1' if ad.is_active else '0' }}"
+                    data-media-type="{{ ad.get('media_type', 'video') }}"
+                    data-media-url="{{ ad.get('media_url', '') }}"
+                    data-click-url="{{ ad.get('click_url', '') }}"
+                    data-watch="{{ ad.get('watch_seconds', 30) }}">
               <i class="fa-solid fa-pen"></i> Edit
             </button>
-            <button type="button" class="btn btn-xs btn-danger js-confirm"
-                    data-action="{{ url_for('admin_web.delete_ad', ad_id=ad.id) }}"
-                    data-title="Delete campaign?"
-                    data-message="“{{ ad.title }}” will be permanently removed. This cannot be undone."
-                    data-confirm-text="Delete" data-icon="fa-trash-can">
-              <i class="fa-solid fa-trash-can"></i> Delete
-            </button>
+            <form method="post" action="{{ url_for('admin_web.delete_ad', ad_id=ad.id) }}"
+                  style="display:inline" onsubmit="return confirm('Delete “{{ ad.title }}”? This cannot be undone.');">
+              <button type="submit" class="btn btn-xs btn-danger"><i class="fa-solid fa-trash-can"></i> Delete</button>
+            </form>
           </td>
         </tr>
         {% endfor %}
@@ -54,4 +110,96 @@
   <p class="empty">No campaigns yet — create one above.</p>
   {% endif %}
 </div>
+
+<!-- ============================ EDIT MODAL ============================ -->
+<div class="modal-overlay" id="editModal" hidden>
+  <div class="modal-card">
+    <h3>Edit campaign</h3>
+    <form method="post" id="editForm" class="ad-form" data-ad-form>
+      <label class="full"><span>Title</span><input type="text" name="title" id="e_title" required /></label>
+      <label><span>Type</span>
+        <select name="ad_type" data-type id="e_type">
+          <option value="rewarded">Rewarded (AdMob)</option>
+          <option value="custom">Custom (your image/video)</option>
+        </select>
+      </label>
+      <label><span>Coins reward</span><input type="number" name="coins_reward" id="e_coins" min="1" required /></label>
+      <label><span>Daily limit</span><input type="number" name="daily_limit" id="e_limit" min="1" required /></label>
+      <label><span>Status</span>
+        <select name="is_active" id="e_active">
+          <option value="1">Active</option>
+          <option value="0">Paused</option>
+        </select>
+      </label>
+
+      <div class="ad-custom is-hidden" data-custom>
+        <label><span>Media type</span>
+          <select name="media_type" data-mediatype id="e_mediatype">
+            <option value="video">Video (≤ 30s)</option>
+            <option value="image">Image</option>
+          </select>
+        </label>
+        <label><span>Watch seconds</span><input type="number" name="watch_seconds" id="e_watch" min="5" max="120" /></label>
+        <label class="full"><span>Media URL</span><input type="url" name="media_url" id="e_mediaurl" /></label>
+        <label class="full"><span>Click URL</span><input type="url" name="click_url" id="e_clickurl" /></label>
+      </div>
+
+      <div class="actions-row" style="gap:10px">
+        <button type="button" class="btn btn-ghost" id="e_cancel">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  // Show custom-only fields only when type === "custom" (works on both forms).
+  function bindCustomToggle(form) {
+    var sel = form.querySelector('[data-type]');
+    var box = form.querySelector('[data-custom]');
+    if (!sel || !box) return;
+    function sync() { box.classList.toggle('is-hidden', sel.value !== 'custom'); }
+    sel.addEventListener('change', sync);
+    sync();
+  }
+  document.querySelectorAll('[data-ad-form]').forEach(bindCustomToggle);
+
+  // Edit modal wiring.
+  (function () {
+    var modal = document.getElementById('editModal');
+    var form = document.getElementById('editForm');
+    function open(d) {
+      form.action = d.action;
+      document.getElementById('e_title').value = d.title || '';
+      document.getElementById('e_type').value = d.type || 'rewarded';
+      document.getElementById('e_coins').value = d.coins || 10;
+      document.getElementById('e_limit').value = d.limit || 10;
+      document.getElementById('e_active').value = d.active || '1';
+      document.getElementById('e_mediatype').value = d.mediaType || 'video';
+      document.getElementById('e_watch').value = d.watch || 30;
+      document.getElementById('e_mediaurl').value = d.mediaUrl || '';
+      document.getElementById('e_clickurl').value = d.clickUrl || '';
+      bindCustomToggle(form);
+      modal.hidden = false;
+    }
+    document.querySelectorAll('.js-edit').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        open({
+          action: btn.dataset.action,
+          title: btn.dataset.title,
+          type: btn.dataset.type,
+          coins: btn.dataset.coins,
+          limit: btn.dataset.limit,
+          active: btn.dataset.active,
+          mediaType: btn.dataset.mediaType,
+          mediaUrl: btn.dataset.mediaUrl,
+          clickUrl: btn.dataset.clickUrl,
+          watch: btn.dataset.watch,
+        });
+      });
+    });
+    document.getElementById('e_cancel').addEventListener('click', function () { modal.hidden = true; });
+    modal.addEventListener('click', function (e) { if (e.target === modal) modal.hidden = true; });
+  })();
+</script>
 {% endblock %}

@@ -1,0 +1,53 @@
+{% extends "site/base.html" %}
+{% block title %}Terms of Service — CashBee{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+  <div class="hero-glow"></div>
+  <div class="container reveal">
+    <span class="pill"><i class="fa-solid fa-file-contract"></i> The ground rules</span>
+    <h1>Terms of <span class="gradient-text">Service</span></h1>
+    <p class="lead center">Last updated: {{ updated }}</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container legal reveal">
+    <p>These Terms of Service govern your use of the <strong>CashBee</strong> app and website. By using CashBee, you agree to these terms.</p>
+
+    <h2>1. Eligibility</h2>
+    <p>You must be at least 18 years old and provide a valid phone number and UPI ID to use earning and withdrawal features.</p>
+
+    <h2>2. How Earning Works</h2>
+    <p>You earn coins by watching rewarded ads and referring friends. All coins are credited <strong>server-side</strong> after a verified ad view. Coins have no cash value until withdrawn according to these terms, and conversion rates and limits may change.</p>
+
+    <h2>3. Withdrawals</h2>
+    <ul>
+      <li>You may request a withdrawal once you reach the minimum balance.</li>
+      <li>Payouts are sent to the UPI ID you provide, after review.</li>
+      <li>We may delay, reject, or reverse a withdrawal if we detect fraud, abuse, or a violation of these terms.</li>
+    </ul>
+
+    <h2>4. Fair Use &amp; Prohibited Conduct</h2>
+    <p>You agree not to use bots, emulators, automated clicks, fake referrals, multiple accounts, or any method to artificially inflate earnings. Violations may result in coin forfeiture and a permanent ban.</p>
+
+    <h2>5. Referrals</h2>
+    <p>Referral bonuses are credited when a referred user signs up with your code. Self-referrals and fraudulent referrals are not allowed and will be reversed.</p>
+
+    <h2>6. Ads</h2>
+    <p>Ads are served by Google AdMob. We are not responsible for the content of third-party ads.</p>
+
+    <h2>7. Account Suspension</h2>
+    <p>We may suspend or terminate accounts that violate these terms or engage in fraudulent activity, at our discretion.</p>
+
+    <h2>8. Changes to the Service</h2>
+    <p>We may modify, suspend, or discontinue any part of the Service (including reward rates and limits) at any time.</p>
+
+    <h2>9. Disclaimer</h2>
+    <p>CashBee is provided "as is" without warranties of any kind. Earnings depend on ad availability and your activity, and are not guaranteed.</p>
+
+    <h2>10. Contact</h2>
+    <p>Questions about these terms? Email us at <a href="mailto:{{ support_email }}">{{ support_email }}</a>.</p>
+  </div>
+</section>
+{% endblock %}
