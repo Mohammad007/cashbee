@@ -48,7 +48,12 @@ input, button, select { font-family: inherit; }
 .sidebar-brand { display: flex; align-items: center; gap: 12px; padding: 22px 22px; border-bottom: 1px solid rgba(255,255,255,.06); white-space: nowrap; }
 .sidebar-brand strong { display: block; color: #fff; font-size: 1.05rem; }
 .sidebar-brand small { color: #67748c; font-size: .72rem; letter-spacing: .04em; text-transform: uppercase; }
-.sidebar-nav { padding: 16px 12px; display: flex; flex-direction: column; gap: 4px; flex: 1; }
+.sidebar-nav { padding: 16px 12px; display: flex; flex-direction: column; gap: 4px; flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: hidden; }
+/* Slim scrollbar that fits the dark sidebar */
+.sidebar-nav::-webkit-scrollbar { width: 6px; }
+.sidebar-nav::-webkit-scrollbar-thumb { background: rgba(255,255,255,.14); border-radius: 999px; }
+.sidebar-nav::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,.28); }
+.sidebar-nav { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.18) transparent; }
 .nav-item {
   display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-radius: 10px;
   font-size: .92rem; font-weight: 500; color: var(--side-text); transition: background .15s, color .15s;
