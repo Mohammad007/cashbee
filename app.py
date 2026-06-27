@@ -34,6 +34,7 @@ from routes.admin_routes import admin_bp
 from routes.site_routes import site_bp
 from routes.admin_web_routes import admin_web_bp
 from routes.gamification_routes import gami_bp
+from routes.payment_routes import payment_bp
 
 
 def create_app() -> Flask:
@@ -58,6 +59,7 @@ def create_app() -> Flask:
     app.register_blueprint(wallet_bp, url_prefix="/api/wallet")
     app.register_blueprint(admin_bp, url_prefix="/api/admin")
     app.register_blueprint(gami_bp, url_prefix="/api")
+    app.register_blueprint(payment_bp, url_prefix="/api")
 
     # --- Server-rendered web (website + admin console) ---
     app.register_blueprint(site_bp)            # /

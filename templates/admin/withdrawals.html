@@ -34,11 +34,20 @@
           <td class="actions">
             {% if w.status == 'pending' %}
             <button type="button" class="btn btn-xs btn-primary js-confirm"
+                    data-action="{{ url_for('admin_web.mark_paid_withdrawal', wid=w.id) }}"
+                    data-title="Mark as paid?"
+                    data-message="Confirm you have manually sent ₹{{ w.amount_inr }} to {{ w.upi_id }} ({{ w.user_name }}) via UPI. This only updates the status."
+                    data-confirm-text="Mark Paid" data-variant="primary" data-icon="fa-circle-check"
+                    data-reason="upi_ref" data-reason-label="UPI transaction ID (optional)"
+                    data-reason-placeholder="e.g. 4193xxxxxxx">
+              <i class="fa-solid fa-circle-check"></i> Mark Paid
+            </button>
+            <button type="button" class="btn btn-xs btn-ghost js-confirm"
                     data-action="{{ url_for('admin_web.approve_withdrawal', wid=w.id) }}"
-                    data-title="Approve &amp; pay out?"
-                    data-message="₹{{ w.amount_inr }} will be sent to {{ w.upi_id }} for {{ w.user_name }}. This triggers a real payout."
-                    data-confirm-text="Approve &amp; Pay" data-variant="primary" data-icon="fa-money-bill-wave">
-              <i class="fa-solid fa-check"></i> Approve &amp; Pay
+                    data-title="Auto-pay via RazorpayX?"
+                    data-message="₹{{ w.amount_inr }} will be sent to {{ w.upi_id }} automatically through RazorpayX. (Requires RazorpayX to be activated.)"
+                    data-confirm-text="Pay via Gateway" data-variant="primary" data-icon="fa-money-bill-wave">
+              <i class="fa-solid fa-bolt"></i> Auto-pay
             </button>
             <button type="button" class="btn btn-xs btn-danger js-confirm"
                     data-action="{{ url_for('admin_web.reject_withdrawal', wid=w.id) }}"

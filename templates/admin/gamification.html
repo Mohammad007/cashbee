@@ -32,7 +32,7 @@
           {% for p in settings.spin_prizes %}
           <tr>
             <td>{{ p.label }}</td>
-            <td>{{ p.coins }}</td>
+            <td style="max-width:120px"><input type="number" name="spin_coins_{{ loop.index0 }}" value="{{ p.coins }}" min="0" style="width:100px;padding:6px;border:1px solid #cbd5e1;border-radius:6px" /></td>
             <td style="max-width:120px"><input type="number" name="spin_weight_{{ loop.index0 }}" value="{{ p.weight }}" min="0" style="width:90px;padding:6px;border:1px solid #cbd5e1;border-radius:6px" /></td>
           </tr>
           {% endfor %}

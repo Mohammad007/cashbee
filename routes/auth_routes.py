@@ -23,6 +23,17 @@ def send_otp_route():
     phone = (data.get("phone") or "").strip()
     if not PHONE_RE.match(phone):
         return jsonify({"error": "Invalid phone. Use +91XXXXXXXXXX"}), 400
+
+    # Block banned users before we even send an OTP.
+    existing = db.get_user_by_phone(phone)
+    if existing and existing.get("is_banned"):
+        return jsonify(
+            {
+                "error": "Your account has been banned. Please contact support.",
+                "banned": True,
+            }
+        ), 403
+
     result = send_otp(phone)
     if not result.get("sent"):
         return jsonify({"error": "Failed to send OTP", "detail": result}), 502
@@ -44,6 +55,16 @@ def verify_otp_route():
         return jsonify({"error": "Invalid or expired OTP"}), 401
 
     user = db.get_user_by_phone(phone)
+
+    # Block banned users right at login with a clear message.
+    if user and user.get("is_banned"):
+        return jsonify(
+            {
+                "error": "Your account has been banned. Please contact support.",
+                "banned": True,
+            }
+        ), 403
+
     is_new_user = user is None
 
     if is_new_user:

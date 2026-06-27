@@ -5,5 +5,10 @@ tinydb==4.8.0
 PyJWT==2.8.0
 python-dotenv==1.0.1
 requests==2.32.3
+# Google Play Billing — server-side purchase verification
+google-api-python-client==2.137.0
+google-auth==2.32.0
 razorpay==1.4.2
+# razorpay still imports pkg_resources, which setuptools>=81 removed.
+setuptools<81
 gunicorn==22.0.0

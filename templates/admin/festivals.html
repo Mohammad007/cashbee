@@ -18,7 +18,13 @@
 {% if active_festival %}
 <div class="card" style="border-left:4px solid {{ active_festival.banner_color }}">
   <strong>{{ active_festival.emoji }} Live now: {{ active_festival.name }}</strong>
+  {% if active_festival.end_at %}
+  <span class="muted"> — {{ active_festival.multiplier }}x coins · ends
+    {{ active_festival.end_at[:16].replace('T', ' ') }}
+    (<span data-countdown="{{ active_festival.end_at }}">…</span>)</span>
+  {% else %}
   <span class="muted"> — {{ active_festival.multiplier }}x coins · ends {{ active_festival.end_date }}</span>
+  {% endif %}
 </div>
 {% endif %}
 
@@ -79,4 +85,29 @@
   </div>
   {% else %}<p class="empty">No festivals yet.</p>{% endif %}
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Live countdown for any element with data-countdown="<ISO end datetime>".
+  (function () {
+    var els = document.querySelectorAll('[data-countdown]');
+    if (!els.length) return;
+    function tick() {
+      var now = Date.now();
+      els.forEach(function (el) {
+        var end = new Date(el.dataset.countdown).getTime();
+        var diff = Math.floor((end - now) / 1000);
+        if (isNaN(end)) { el.textContent = ''; return; }
+        if (diff <= 0) { el.textContent = 'ended'; return; }
+        var h = Math.floor(diff / 3600);
+        var m = Math.floor((diff % 3600) / 60);
+        var s = diff % 60;
+        el.textContent = (h ? h + 'h ' : '') + m + 'm ' + s + 's left';
+      });
+    }
+    tick();
+    setInterval(tick, 1000);
+  })();
+</script>
 {% endblock %}

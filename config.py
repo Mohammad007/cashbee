@@ -48,6 +48,13 @@ class Config:
         "WHATSAPP_OTP_TEMPLATE_NAME", "OTP Verification"
     )
 
+    # --- Google Play Billing (in-app purchases for membership / boosts) ---
+    # Purchases are verified server-side via the Google Play Developer API.
+    # Set GOOGLE_PLAY_PACKAGE_NAME + GOOGLE_SERVICE_ACCOUNT_FILE (path to the
+    # service-account JSON downloaded from Google Cloud, with Play access).
+    GOOGLE_PLAY_PACKAGE_NAME = os.getenv("GOOGLE_PLAY_PACKAGE_NAME", "com.cashbee.cashbee")
+    GOOGLE_SERVICE_ACCOUNT_FILE = os.getenv("GOOGLE_SERVICE_ACCOUNT_FILE", "")
+
     # --- App economy defaults (overridable via admin settings) ---
     DEFAULT_SETTINGS = {
         "coin_rate": 10,            # coins per ₹1
@@ -57,6 +64,12 @@ class Config:
         "referral_signup_bonus": 50,
         "referral_bonus_percent": 5,  # % of referee ad earnings to referrer
         "maintenance_mode": False,
+        # --- WhatsApp OTP provider (editable from Admin → Settings) ---
+        # Defaults seed from env on first boot; after that the admin panel owns them.
+        "whatsapp_api_url": WHATSAPP_API_URL,
+        "whatsapp_session_id": WHATSAPP_OTP_SESSION_ID,
+        "whatsapp_template_id": WHATSAPP_OTP_TEMPLATE_ID,
+        "whatsapp_template_name": WHATSAPP_OTP_TEMPLATE_NAME,
         # --- AdMob ad unit IDs (served to the app at runtime; change these from
         # the admin panel and the app picks them up on next launch — NO rebuild).
         # NOTE: the AdMob *App ID* (ca-app-pub-...~...) lives in the Android
@@ -74,6 +87,12 @@ class Config:
         "razorpay_live_key_id": "",
         "razorpay_live_key_secret": "",
         "razorpay_live_account_number": "",
+        # Membership plan overrides (admin-editable; empty => Config defaults).
+        "membership_plans": {},
+        # Master switch for paid features (membership + boosts). When False the
+        # app hides the store and the purchase endpoints are disabled — useful to
+        # ship a Play-compliant build with no in-app purchases.
+        "membership_enabled": True,
         # --- Gamification (all editable from Admin → Gamification) ---
         # Daily streak rewards: coins for day 1..7 (cycle restarts after day 7).
         "streak_rewards": [10, 15, 20, 25, 30, 40, 100],
@@ -87,7 +106,7 @@ class Config:
             {"label": "Good Win", "coins": 30, "weight": 10},
             {"label": "Great Win", "coins": 75, "weight": 7},
             {"label": "Jackpot!", "coins": 250, "weight": 2},
-            {"label": "MEGA JACKPOT", "coins": 1000, "weight": 1},
+            {"label": "MEGA JACKPOT", "coins": 500, "weight": 1},
         ],
     }
 
@@ -108,6 +127,37 @@ class Config:
         (50, 15000, "Legend"),
         (100, 50000, "CashBee Champion"),
     ]
+
+    # --- Premium membership plans (paid, Razorpay) ---
+    MEMBERSHIP_PLANS = {
+        "pro_monthly": {
+            "name": "Pro", "price_inr": 99, "duration_days": 30,
+            "coin_multiplier": 2.0, "daily_ad_limit": 20, "daily_spins": 5,
+            "instant_withdrawal": False, "color": "#C0C0C0", "emoji": "🥈",
+        },
+        "elite_monthly": {
+            "name": "Elite", "price_inr": 249, "duration_days": 30,
+            "coin_multiplier": 3.0, "daily_ad_limit": 999, "daily_spins": 10,
+            "instant_withdrawal": True, "color": "#FFD700", "emoji": "👑",
+        },
+    }
+
+    # --- Boost packs (paid, time-limited coin multiplier) ---
+    BOOST_PACKS = {
+        "gold_boost": {
+            "name": "Gold Boost", "price_inr": 39, "duration_hours": 24,
+            "coin_multiplier": 2.0, "extra_spins": 0, "emoji": "⚡",
+            "color": "#FFD700", "tag": None,
+        },
+        "seven_day_power": {
+            "name": "7-Day Power", "price_inr": 149, "duration_hours": 168,
+            "coin_multiplier": 2.0, "extra_spins": 0, "emoji": "🚀",
+            "color": "#FF6B00", "tag": "BEST VALUE",
+        },
+    }
+
+    # Hard cap on coins from a single ad watch (after all multipliers).
+    MAX_COINS_PER_AD = 500
 
     # --- CORS ---
     CORS_ORIGINS = os.getenv(

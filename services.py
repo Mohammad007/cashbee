@@ -126,8 +126,19 @@ def admin_required(fn):
 OTP_TTL = 300  # seconds
 
 
-def _wa_url(path: str) -> str:
-    return f"{Config.WHATSAPP_API_URL.rstrip('/')}{path}"
+def _wa_cfg() -> dict:
+    """WhatsApp OTP config from the admin panel (DB), falling back to env."""
+    s = db.get_settings()
+    return {
+        "url": (s.get("whatsapp_api_url") or Config.WHATSAPP_API_URL).rstrip("/"),
+        "session_id": s.get("whatsapp_session_id") or Config.WHATSAPP_OTP_SESSION_ID,
+        "template_id": s.get("whatsapp_template_id") or Config.WHATSAPP_OTP_TEMPLATE_ID,
+        "template_name": s.get("whatsapp_template_name") or Config.WHATSAPP_OTP_TEMPLATE_NAME,
+    }
+
+
+def _wa_url(base: str, path: str) -> str:
+    return f"{base.rstrip('/')}{path}"
 
 
 def _wa_headers() -> dict:
@@ -146,16 +157,17 @@ def _wa_error(data: dict) -> str:
 
 def send_otp(phone: str) -> dict:
     """Request an OTP over WhatsApp via the external provider."""
+    cfg = _wa_cfg()
     wa_phone = phone.lstrip("+")
     try:
         resp = requests.post(
-            _wa_url("/api/auth/otp/request"),
+            _wa_url(cfg["url"], "/api/auth/otp/request"),
             headers=_wa_headers(),
             json={
                 "phone": wa_phone,
-                "sessionId": Config.WHATSAPP_OTP_SESSION_ID,
-                "templateId": Config.WHATSAPP_OTP_TEMPLATE_ID,
-                "templateName": Config.WHATSAPP_OTP_TEMPLATE_NAME,
+                "sessionId": cfg["session_id"],
+                "templateId": cfg["template_id"],
+                "templateName": cfg["template_name"],
             },
             timeout=20,
         )
@@ -175,10 +187,11 @@ def send_otp(phone: str) -> dict:
 
 def verify_otp(phone: str, otp: str) -> bool:
     """Verify the OTP with the WhatsApp provider."""
+    cfg = _wa_cfg()
     wa_phone = phone.lstrip("+")
     try:
         resp = requests.post(
-            _wa_url("/api/auth/otp/verify"),
+            _wa_url(cfg["url"], "/api/auth/otp/verify"),
             headers=_wa_headers(),
             json={"phone": wa_phone, "code": otp},
             timeout=20,
@@ -240,9 +253,29 @@ def create_payout(upi_id: str, amount_inr: float, reference: str) -> dict:
             auth=auth,
             timeout=20,
         )
-        data = resp.json()
+        try:
+            data = resp.json()
+        except ValueError:
+            data = {}
         if resp.status_code in (200, 201):
             return {"success": True, "payout_id": data.get("id"), "mode": creds["mode"], "raw": data}
+
+        # A 404 on /v1/payouts means RazorpayX (Payouts) isn't enabled for these
+        # keys — the single most common setup mistake. Give an actionable hint.
+        if resp.status_code == 404:
+            return {
+                "success": False,
+                "error": (
+                    f"RazorpayX Payouts is not enabled for your {creds['mode']} keys. "
+                    "Activate RazorpayX at x.razorpay.com and use its keys + account "
+                    "number (regular Razorpay payment-gateway keys cannot do payouts)."
+                ),
+            }
+        if resp.status_code == 401:
+            return {
+                "success": False,
+                "error": f"Razorpay {creds['mode']} key/secret is invalid (401 unauthorized).",
+            }
         return {"success": False, "error": data}
     except requests.RequestException as exc:
         return {"success": False, "error": str(exc)}

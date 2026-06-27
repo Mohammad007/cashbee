@@ -127,14 +127,14 @@ SUPPORT_EMAIL = "bilalmalik1561@gmail.com"
 @site_bp.get("/privacy-policy")
 def privacy_policy():
     return render_template(
-        "site/privacy.html", support_email=SUPPORT_EMAIL, updated="June 26, 2026"
+        "site/privacy.html", support_email=SUPPORT_EMAIL, updated="June 27, 2026"
     )
 
 
 @site_bp.get("/terms")
 def terms():
     return render_template(
-        "site/terms.html", support_email=SUPPORT_EMAIL, updated="June 26, 2026"
+        "site/terms.html", support_email=SUPPORT_EMAIL, updated="June 27, 2026"
     )
 
 

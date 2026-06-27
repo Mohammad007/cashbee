@@ -50,6 +50,7 @@ app_build_db = _open("app_build.json")
 festivals_db = _open("festivals.json")
 milestones_db = _open("milestones.json")
 spins_db = _open("spins.json")
+purchases_db = _open("purchases.json")
 
 Q = Query()
 
@@ -117,6 +118,26 @@ def update_settings(patch: dict) -> dict:
         settings_db.truncate()
         settings_db.insert(current)
     return current
+
+
+# --------------------------------------------------------------------------- #
+# Membership plans (editable from Admin → Membership; defaults from Config)
+# --------------------------------------------------------------------------- #
+def get_membership_plans() -> dict:
+    """Plan catalog with admin edits overlaid on the Config defaults. Plan keys
+    (pro_monthly, elite_monthly) stay fixed; the admin tunes each plan's fields."""
+    from config import Config
+
+    stored = get_settings().get("membership_plans") or {}
+    merged = {}
+    for pid, default in Config.MEMBERSHIP_PLANS.items():
+        merged[pid] = {**default, **(stored.get(pid) or {})}
+    return merged
+
+
+def set_membership_plans(plans: dict) -> dict:
+    update_settings({"membership_plans": plans})
+    return plans
 
 
 # --------------------------------------------------------------------------- #
@@ -189,6 +210,18 @@ def create_user(phone: str, referred_by: str | None = None) -> dict:
         "spin_tickets": 0,
         "total_spins": 0,
         "total_spin_earnings": 0,
+        # Premium membership
+        "membership_plan": "free",
+        "membership_expiry": None,
+        "membership_coin_multiplier": 1.0,
+        "membership_daily_ad_limit": 10,
+        "membership_daily_spins": 0,
+        "membership_instant_withdrawal": False,
+        # Boost pack
+        "active_boost_multiplier": 1.0,
+        "active_boost_expiry": None,
+        "active_boost_name": "",
+        "boost_extra_spins": 0,
     }
     with _lock:
         users_db.insert(user)
@@ -449,6 +482,7 @@ def create_festival(data: dict) -> dict:
         "multiplier": float(data.get("multiplier", 2.0)),
         "start_date": data.get("start_date", ""),
         "end_date": data.get("end_date", ""),
+        "end_at": data.get("end_at", ""),  # ISO datetime for hour-precise (flash) offers
         "banner_text": data.get("banner_text", ""),
         "banner_color": data.get("banner_color", "#FF6B00"),
         "emoji": data.get("emoji", "🎉"),
@@ -608,3 +642,53 @@ def restore_backup(data: dict) -> dict:
                     tbl.insert(rec)
             counts[name] = len(rows)
     return counts
+
+
+# --------------------------------------------------------------------------- #
+# Purchases (membership / boost — Razorpay)
+# --------------------------------------------------------------------------- #
+def create_purchase(user_id, purchase_type, item_id, item_name, amount_inr,
+                    order_id, purchase_token="", status="completed") -> dict:
+    """Record a Google Play purchase. `order_id` is Google's orderId (unique),
+    used to make verification idempotent (no double-crediting on retries)."""
+    rec = {
+        "id": new_id(),
+        "user_id": user_id,
+        "purchase_type": purchase_type,   # "membership" | "boost"
+        "item_id": item_id,
+        "item_name": item_name,
+        "amount_inr": amount_inr,
+        "order_id": order_id,             # Google Play orderId
+        "purchase_token": purchase_token,
+        "status": status,                 # completed | failed
+        "created_at": now_iso(),
+        "expires_at": None,
+    }
+    with _lock:
+        purchases_db.insert(rec)
+    return rec
+
+
+def get_purchase_by_order(order_id: str):
+    with _lock:
+        return purchases_db.get(Q.order_id == order_id)
+
+
+def update_purchase(order_id: str, patch: dict):
+    with _lock:
+        purchases_db.update(patch, Q.order_id == order_id)
+        return purchases_db.get(Q.order_id == order_id)
+
+
+def get_purchases_by_user(user_id: str) -> list:
+    with _lock:
+        rows = purchases_db.search(Q.user_id == user_id)
+    rows.sort(key=lambda r: r.get("created_at", ""), reverse=True)
+    return rows
+
+
+def all_purchases() -> list:
+    with _lock:
+        rows = purchases_db.all()
+    rows.sort(key=lambda r: r.get("created_at", ""), reverse=True)
+    return rows

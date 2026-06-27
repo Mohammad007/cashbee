@@ -1,0 +1,40 @@
+{% extends "admin/base.html" %}
+{% block title %}Purchases{% endblock %}
+{% block heading %}Purchases{% endblock %}
+{% block subheading %}All membership &amp; boost transactions{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-head">
+    <div style="display:flex;gap:8px;align-items:center">
+      <a href="{{ url_for('admin_web.purchases') }}" class="btn btn-xs {{ 'btn-primary' if not type_filter else 'btn-ghost' }}">All</a>
+      <a href="{{ url_for('admin_web.purchases', type='membership') }}" class="btn btn-xs {{ 'btn-primary' if type_filter == 'membership' else 'btn-ghost' }}">Membership</a>
+      <a href="{{ url_for('admin_web.purchases', type='boost') }}" class="btn btn-xs {{ 'btn-primary' if type_filter == 'boost' else 'btn-ghost' }}">Boost</a>
+    </div>
+    <a href="{{ url_for('admin_web.purchases_export') }}" class="btn btn-sm btn-ghost"><i class="fa-solid fa-file-csv"></i> Export CSV</a>
+  </div>
+  {% if purchases %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Date</th><th>User</th><th>Item</th><th>Amount</th><th>Expiry</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for p in purchases %}
+        <tr>
+          <td class="muted">{{ p.created_at[:16].replace('T',' ') }}</td>
+          <td>{{ p.user_phone }}</td>
+          <td>{{ p.item_name }} <span class="muted" style="font-size:11px">({{ p.purchase_type }})</span></td>
+          <td>₹{{ '{:,.0f}'.format(p.amount_inr) }}</td>
+          <td class="muted">{{ (p.expires_at[:10] if p.expires_at else '—') }}</td>
+          <td>
+            {% if p.status == 'completed' %}<span class="badge badge-paid">completed</span>
+            {% elif p.status == 'failed' %}<span class="badge badge-rejected">failed</span>
+            {% else %}<span class="badge badge-pending">pending</span>{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}<p class="empty">No purchases yet.</p>{% endif %}
+</div>
+{% endblock %}

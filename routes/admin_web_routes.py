@@ -300,7 +300,11 @@ def approve_withdrawal(wid):
 
     payout = create_payout(w["upi_id"], w["amount_inr"], reference=wid)
     if not payout.get("success"):
-        flash("Payout failed at the gateway.", "error")
+        err = payout.get("error")
+        # Razorpay errors come back as a nested dict; pull out the human message.
+        if isinstance(err, dict):
+            err = (err.get("error") or {}).get("description") or err.get("description") or str(err)
+        flash(f"Payout failed: {err or 'gateway error'}", "error")
         return redirect(url_for("admin_web.withdrawals"))
 
     user = db.get_user_by_id(w["user_id"])
@@ -318,6 +322,39 @@ def approve_withdrawal(wid):
     )
     # TODO: notify the user that ₹{w['amount_inr']} was paid (WhatsApp notification API — to be added).
     flash(f"Withdrawal approved & ₹{w['amount_inr']} paid out.", "success")
+    return redirect(request.referrer or url_for("admin_web.withdrawals"))
+
+
+@admin_web_bp.post("/withdrawals/<wid>/mark-paid")
+@login_required
+def mark_paid_withdrawal(wid):
+    """Manually mark a withdrawal paid — the admin sent the money over UPI by
+    hand (no payment gateway). Optionally records a UPI transaction reference."""
+    upi_ref = (request.form.get("upi_ref") or "").strip()
+    w = db.get_withdrawal(wid)
+    if not w:
+        flash("Withdrawal not found.", "error")
+        return redirect(url_for("admin_web.withdrawals"))
+    if w["status"] != "pending":
+        flash(f"Already {w['status']}.", "error")
+        return redirect(url_for("admin_web.withdrawals"))
+
+    user = db.get_user_by_id(w["user_id"])
+    if user:
+        db.update_user(
+            w["user_id"], {"total_withdrawn": user["total_withdrawn"] + w["coins"]}
+        )
+    note = f"Paid manually (UPI ref: {upi_ref})" if upi_ref else "Paid manually"
+    db.update_withdrawal(
+        wid,
+        {
+            "status": "paid",
+            "paid_at": datetime.now(timezone.utc).isoformat(),
+            "admin_note": note,
+        },
+    )
+    # TODO: notify the user that ₹{w['amount_inr']} was paid (WhatsApp notification API — to be added).
+    flash(f"Marked as paid — ₹{w['amount_inr']} to {w['upi_id']}.", "success")
     return redirect(request.referrer or url_for("admin_web.withdrawals"))
 
 
@@ -411,6 +448,7 @@ def settings():
                 patch[key] = (request.form.get(key) or "").strip()
         patch["ads_enabled"] = request.form.get("ads_enabled") == "1"
         patch["use_test_ads"] = request.form.get("use_test_ads") == "1"
+        patch["membership_enabled"] = request.form.get("membership_enabled") == "1"
 
         # Razorpay — mode + non-secret fields always saved; secrets only when a
         # new value is typed (blank = keep the existing stored secret).
@@ -428,6 +466,16 @@ def settings():
             val = (request.form.get(key) or "").strip()
             if val:
                 patch[key] = val
+
+        # WhatsApp OTP provider settings.
+        for key in (
+            "whatsapp_api_url",
+            "whatsapp_session_id",
+            "whatsapp_template_id",
+            "whatsapp_template_name",
+        ):
+            if request.form.get(key) is not None:
+                patch[key] = (request.form.get(key) or "").strip()
 
         db.update_settings(patch)
         flash("Settings saved.", "success")
@@ -544,6 +592,7 @@ def flash_offer():
             "multiplier": mult,
             "start_date": today,
             "end_date": end.strftime("%Y-%m-%d"),
+            "end_at": end.isoformat(),  # hour-precise end for the live countdown
             "banner_text": f"⚡ Flash Offer! {mult:g}x Coins for {hours}h only!",
             "banner_color": "#7C3AED",
             "emoji": "⚡",
@@ -605,9 +654,11 @@ def gamification():
         patch["first_withdrawal_bonus"] = int(
             request.form.get("first_withdrawal_bonus") or 0
         )
-        # Spin prize weights (labels/coins fixed; admin tunes the odds)
+        # Spin prizes: admin tunes both the coin payout and the odds (weight).
         prizes = [dict(p) for p in settings.get("spin_prizes", [])]
         for i, p in enumerate(prizes):
+            if request.form.get(f"spin_coins_{i}") is not None:
+                p["coins"] = int(request.form.get(f"spin_coins_{i}") or p["coins"])
             p["weight"] = int(request.form.get(f"spin_weight_{i}") or p["weight"])
         patch["spin_prizes"] = prizes
         db.update_settings(patch)
@@ -620,6 +671,37 @@ def gamification():
         levels=Config.LEVELS,
         milestones=Config.MILESTONES,
         active="gamification",
+    )
+
+
+# --------------------------------------------------------------------------- #
+# Membership plans (Pro / Elite) — edit price & benefits
+# --------------------------------------------------------------------------- #
+@admin_web_bp.route("/membership", methods=["GET", "POST"])
+@login_required
+def membership():
+    plans = db.get_membership_plans()
+    if request.method == "POST":
+        updated = {}
+        for pid, plan in plans.items():
+            updated[pid] = {
+                **plan,  # keep color/emoji and any other fields
+                "name": (request.form.get(f"{pid}_name") or plan["name"]).strip(),
+                "price_inr": int(request.form.get(f"{pid}_price_inr") or plan["price_inr"]),
+                "duration_days": int(request.form.get(f"{pid}_duration_days") or plan["duration_days"]),
+                "coin_multiplier": float(request.form.get(f"{pid}_coin_multiplier") or plan["coin_multiplier"]),
+                "daily_ad_limit": int(request.form.get(f"{pid}_daily_ad_limit") or plan["daily_ad_limit"]),
+                "daily_spins": int(request.form.get(f"{pid}_daily_spins") or plan["daily_spins"]),
+                "instant_withdrawal": request.form.get(f"{pid}_instant_withdrawal") == "1",
+            }
+        db.set_membership_plans(updated)
+        flash("Membership plans updated.", "success")
+        return redirect(url_for("admin_web.membership"))
+
+    # Render as an ordered list so the template is simple.
+    plan_list = [{"id": pid, **p} for pid, p in plans.items()]
+    return render_template(
+        "admin/membership.html", plans=plan_list, active="membership"
     )
 
 
@@ -679,3 +761,84 @@ def backup_import():
     total = sum(counts.values())
     flash(f"Backup restored — {total} records across {len(counts)} tables.", "success")
     return redirect(url_for("admin_web.backup"))
+
+
+# --------------------------------------------------------------------------- #
+# Revenue & Purchases (paid memberships + boosts)
+# --------------------------------------------------------------------------- #
+@admin_web_bp.get("/revenue")
+@login_required
+def revenue():
+    import billing
+    purchases = db.all_purchases()
+    completed = [p for p in purchases if p.get("status") == "completed"]
+    today = db.today_str()
+    month = today[:7]
+
+    today_rev = sum(p["amount_inr"] for p in completed if p["created_at"][:10] == today)
+    month_rev = sum(p["amount_inr"] for p in completed if p["created_at"][:7] == month)
+    total_rev = sum(p["amount_inr"] for p in completed)
+
+    pro = elite = active_boosts = 0
+    for u in db.all_users():
+        if billing.membership_active(u):
+            if u.get("membership_plan") == "elite_monthly":
+                elite += 1
+            elif u.get("membership_plan") == "pro_monthly":
+                pro += 1
+        if billing.boost_active(u):
+            active_boosts += 1
+
+    recent = completed[:15]
+    for p in recent:
+        u = db.get_user_by_id(p["user_id"])
+        p["user_phone"] = u["phone"] if u else "—"
+
+    return render_template(
+        "admin/revenue.html",
+        today_rev=today_rev, month_rev=month_rev, total_rev=total_rev,
+        pro=pro, elite=elite, active_boosts=active_boosts,
+        recent=recent, active="revenue",
+    )
+
+
+@admin_web_bp.get("/purchases")
+@login_required
+def purchases():
+    type_filter = request.args.get("type", "")
+    rows = db.all_purchases()
+    if type_filter in ("membership", "boost"):
+        rows = [p for p in rows if p.get("purchase_type") == type_filter]
+    for p in rows:
+        u = db.get_user_by_id(p["user_id"])
+        p["user_phone"] = u["phone"] if u else "—"
+    return render_template(
+        "admin/purchases.html", purchases=rows, type_filter=type_filter,
+        active="purchases",
+    )
+
+
+@admin_web_bp.get("/purchases/export.csv")
+@login_required
+def purchases_export():
+    import csv, io
+    from flask import Response
+
+    rows = db.all_purchases()
+    buf = io.StringIO()
+    w = csv.writer(buf)
+    w.writerow(["Date", "User", "Type", "Item", "Amount (INR)", "Status",
+                "Order ID", "Payment ID", "Expires"])
+    for p in rows:
+        u = db.get_user_by_id(p["user_id"])
+        w.writerow([
+            p.get("created_at", ""), (u["phone"] if u else ""),
+            p.get("purchase_type", ""), p.get("item_name", ""),
+            p.get("amount_inr", 0), p.get("status", ""),
+            p.get("razorpay_order_id", ""), p.get("razorpay_payment_id", ""),
+            p.get("expires_at", "") or "",
+        ])
+    return Response(
+        buf.getvalue(), mimetype="text/csv",
+        headers={"Content-Disposition": "attachment; filename=cashbee-purchases.csv"},
+    )

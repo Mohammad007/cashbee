@@ -11,6 +11,7 @@ from flask import Blueprint, request, jsonify, g
 
 import database.db as db
 import gamification as gm
+import billing
 from services import auth_required, create_watch_token, watch_token_elapsed
 from extensions import limiter
 
@@ -60,6 +61,7 @@ def ads_config():
     return jsonify(
         {
             "maintenance_mode": bool(s.get("maintenance_mode")),
+            "membership_enabled": bool(s.get("membership_enabled", True)),
             "ads_enabled": bool(s.get("ads_enabled", True)),
             "use_test_ads": test,
             "rewarded_ad_unit_id": _TEST_REWARDED if test else (s.get("admob_rewarded_id") or ""),
@@ -95,7 +97,8 @@ def watch_complete():
 
     user = db.get_user_by_id(g.user["id"])
     today = db.today_str()
-    daily_limit = min(ad.get("daily_limit", 10), settings["daily_ad_limit"])
+    # Membership raises the daily ad limit (Pro 20, Elite 999); else the default.
+    daily_limit = billing.effective_daily_ad_limit(user, settings)
 
     # Reset the daily counter if it's a new day.
     watched_today = user["ads_watched_today"] if user["last_ad_date"] == today else 0
@@ -117,12 +120,8 @@ def watch_complete():
 
     base = ad["coins_reward"]
 
-    # Multipliers: base × user level multiplier × active festival multiplier.
-    level_mult = float(db.get_field(user, "coin_multiplier", 1.0))
-    festival = db.active_festival()
-    festival_mult = float(festival["multiplier"]) if festival else 1.0
-    total_mult = level_mult * festival_mult
-    reward = max(1, round(base * total_mult))
+    # Full multiplier: max(level, membership) × boost × festival  (capped).
+    reward, breakdown = billing.calculate_final_coins(user, base)
 
     # Mark the watch (daily counter + cooldown) and hand out a spin ticket.
     db.update_user(
@@ -162,13 +161,8 @@ def watch_complete():
             "referrer_bonus": referrer_bonus,
             "ads_watched_today": watched_today + 1,
             "daily_limit": daily_limit,
-            # Earnings breakdown for the UI ("10 × 1.5 × 3.0 = 45")
-            "breakdown": {
-                "base": base,
-                "level_multiplier": level_mult,
-                "festival_multiplier": festival_mult,
-                "total_multiplier": round(total_mult, 2),
-            },
+            # Full earnings breakdown (base, level, membership, boost, festival).
+            "breakdown": breakdown,
             # Level
             "level_up": level_up,
             "new_level": new_level,
@@ -187,7 +181,7 @@ def ad_status():
     settings = db.get_settings()
     today = db.today_str()
     watched = user["ads_watched_today"] if user["last_ad_date"] == today else 0
-    limit = settings["daily_ad_limit"]
+    limit = billing.effective_daily_ad_limit(user, settings)
 
     cooldown_remaining = 0
     if user.get("last_ad_time"):
