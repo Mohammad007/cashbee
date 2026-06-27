@@ -31,6 +31,19 @@
 
   <div class="card">
     <div class="card-head">
+      <h3><i class="fa-solid fa-chart-simple"></i> Website Stats</h3>
+      <span class="muted">Numbers shown on the public site (real activity adds on top)</span>
+    </div>
+    <div class="field-grid">
+      <label><span>Total Users <small>(baseline)</small></span><input type="number" name="stats_baseline_users" value="{{ settings.stats_baseline_users }}" min="0" /></label>
+      <label><span>Total Paid Out <small>(₹ baseline)</small></span><input type="number" name="stats_baseline_paid_inr" value="{{ settings.stats_baseline_paid_inr }}" min="0" /></label>
+      <label><span>Ads Watched <small>(baseline)</small></span><input type="number" name="stats_baseline_ads" value="{{ settings.stats_baseline_ads }}" min="0" /></label>
+    </div>
+    <p class="muted" style="margin-top:14px"><i class="fa-solid fa-circle-info"></i> Displayed value = this baseline + real activity from the database. Set all to <strong>0</strong> to show only true numbers (recommended for Play Store to avoid misleading claims).</p>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
       <h3><i class="fa-solid fa-rectangle-ad"></i> AdMob Ad Units</h3>
       <span class="muted">App fetches these on launch — no rebuild needed</span>
     </div>

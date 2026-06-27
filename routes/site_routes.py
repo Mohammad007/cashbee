@@ -44,12 +44,16 @@ def _live_stats() -> dict:
         1 for t in db.transactions_db.all() if t.get("type") == "ad_earn"
     )
 
-    # Marketing baseline so a fresh install still reads well. Real activity
-    # stacks on top of these floors.
+    # Admin-controlled baseline floors (Admin → Settings → Website Stats). Real
+    # activity stacks on top. Set all to 0 to show only the true numbers.
+    base_users = int(settings.get("stats_baseline_users", 0) or 0)
+    base_paid = int(settings.get("stats_baseline_paid_inr", 0) or 0)
+    base_ads = int(settings.get("stats_baseline_ads", 0) or 0)
+
     return {
-        "users": _humanize(total_users + 120_000),
-        "paid": "₹" + _humanize(total_inr + 4_800_000),
-        "ads": _humanize(ads_watched + 9_200_000),
+        "users": _humanize(total_users + base_users),
+        "paid": "₹" + _humanize(total_inr + base_paid),
+        "ads": _humanize(ads_watched + base_ads),
     }
 
 

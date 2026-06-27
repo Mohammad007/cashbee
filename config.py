@@ -64,6 +64,12 @@ class Config:
         "referral_signup_bonus": 50,
         "referral_bonus_percent": 5,  # % of referee ad earnings to referrer
         "maintenance_mode": False,
+        # --- Website "stats" section (editable from Admin → Settings) ---
+        # Displayed value = real activity from the DB + these baseline figures.
+        # Set all to 0 to show only the true numbers.
+        "stats_baseline_users": 120000,
+        "stats_baseline_paid_inr": 4800000,
+        "stats_baseline_ads": 9200000,
         # --- WhatsApp OTP provider (editable from Admin → Settings) ---
         # Defaults seed from env on first boot; after that the admin panel owns them.
         "whatsapp_api_url": WHATSAPP_API_URL,

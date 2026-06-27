@@ -434,6 +434,9 @@ def settings():
             "min_withdrawal",
             "referral_signup_bonus",
             "referral_bonus_percent",
+            "stats_baseline_users",
+            "stats_baseline_paid_inr",
+            "stats_baseline_ads",
         ):
             if request.form.get(key) is not None:
                 try:
