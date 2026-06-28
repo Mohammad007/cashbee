@@ -10,13 +10,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" referrerpolicy="no-referrer" />
   <link rel="stylesheet" href="{{ url_for('static', filename='site/style.css') }}" />
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐝</text></svg>" />
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='site/cashbee-logo.png') }}" />
 </head>
 <body>
   <header class="nav" id="nav">
     <div class="container nav-inner">
       <a href="{{ url_for('site.index') }}" class="brand">
-        <span class="brand-badge"><i class="fa-solid fa-sack-dollar"></i></span>
+        <img src="{{ url_for('static', filename='site/cashbee-logo.png') }}" alt="CashBee" class="brand-logo" />
         <span class="brand-name">CashBee</span>
       </a>
       <nav class="nav-links">
@@ -35,7 +35,7 @@
     <div class="container footer-inner">
       <div class="footer-brand">
         <div class="brand">
-          <span class="brand-badge"><i class="fa-solid fa-sack-dollar"></i></span>
+          <img src="{{ url_for('static', filename='site/cashbee-logo.png') }}" alt="CashBee" class="brand-logo" />
           <span class="brand-name">CashBee</span>
         </div>
         <p>Watch ads, refer friends, and withdraw real cash to UPI — the simplest way to earn in your spare time.</p>
