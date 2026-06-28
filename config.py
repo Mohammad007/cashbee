@@ -168,7 +168,7 @@ class Config:
     # --- CORS ---
     CORS_ORIGINS = os.getenv(
         "CORS_ORIGINS",
-        "http://localhost:3000,http://localhost:3001,https://cashbee.up.railway.app",
+        "http://localhost:3000,http://localhost:3001,https://cashbee.dapperdeveloper.in",
     ).split(",")
 
     # --- Rate limiting ---

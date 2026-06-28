@@ -6,7 +6,7 @@ from services import auth_required
 
 referral_bp = Blueprint("referral", __name__)
 
-REF_BASE_URL = "https://cashbee.up.railway.app/ref/"
+REF_BASE_URL = "https://cashbee.dapperdeveloper.in/ref/"
 
 
 @referral_bp.get("/info")
