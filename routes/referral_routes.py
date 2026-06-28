@@ -32,12 +32,15 @@ def referral_info():
             }
         )
 
+    settings = db.get_settings()
     return jsonify(
         {
             "code": user["referral_code"],
             "link": REF_BASE_URL + user["referral_code"],
             "direct_count": len(tree),
             "total_earned": total_earned,
+            "signup_bonus": settings["referral_signup_bonus"],
+            "commission_percent": settings["referral_bonus_percent"],
             "tree": tree,
         }
     )
