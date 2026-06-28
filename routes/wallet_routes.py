@@ -31,6 +31,7 @@ def balance():
             "coins": user["coins"],
             "coin_rate": settings["coin_rate"],
             "min_withdrawal": settings["min_withdrawal"],
+            "first_withdrawal_bonus": settings.get("first_withdrawal_bonus", 0),
             "inr_value": _inr(user["coins"], settings["coin_rate"]),
             "total_earned": user["total_earned"],
             "total_withdrawn": user["total_withdrawn"],
