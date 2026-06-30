@@ -31,22 +31,7 @@ class Config:
     ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@cashbee.app")
     ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123")
 
-    # --- WhatsApp OTP provider ---
-    # OTP is generated, delivered (over WhatsApp) and verified by this external
-    # service. We only forward the user's phone number to it; CashBee then issues
-    # its own JWT once the code is verified.
-    WHATSAPP_API_URL = os.getenv(
-        "WHATSAPP_API_URL", "https://whatsapp-api-production-807b.up.railway.app"
-    )
-    WHATSAPP_OTP_SESSION_ID = os.getenv(
-        "WHATSAPP_OTP_SESSION_ID", "a12f37fe-aed1-4ef7-994f-3d21673b08df"
-    )
-    WHATSAPP_OTP_TEMPLATE_ID = os.getenv(
-        "WHATSAPP_OTP_TEMPLATE_ID", "cd365b8d-802a-4e4d-b8dc-97a8286cad15"
-    )
-    WHATSAPP_OTP_TEMPLATE_NAME = os.getenv(
-        "WHATSAPP_OTP_TEMPLATE_NAME", "OTP Verification"
-    )
+
 
     # --- Google Play Billing (in-app purchases for membership / boosts) ---
     # Purchases are verified server-side via the Google Play Developer API.
@@ -70,12 +55,7 @@ class Config:
         "stats_baseline_users": 120000,
         "stats_baseline_paid_inr": 4800000,
         "stats_baseline_ads": 9200000,
-        # --- WhatsApp OTP provider (editable from Admin → Settings) ---
-        # Defaults seed from env on first boot; after that the admin panel owns them.
-        "whatsapp_api_url": WHATSAPP_API_URL,
-        "whatsapp_session_id": WHATSAPP_OTP_SESSION_ID,
-        "whatsapp_template_id": WHATSAPP_OTP_TEMPLATE_ID,
-        "whatsapp_template_name": WHATSAPP_OTP_TEMPLATE_NAME,
+
         # --- AdMob ad unit IDs (served to the app at runtime; change these from
         # the admin panel and the app picks them up on next launch — NO rebuild).
         # NOTE: the AdMob *App ID* (ca-app-pub-...~...) lives in the Android

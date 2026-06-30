@@ -1,11 +1,11 @@
-"""Authentication: OTP send/verify, signup with referral, admin login."""
+"""Authentication: direct phone login (OTP skipped), signup with referral, admin login."""
 import re
 
 from flask import Blueprint, request, jsonify
 
 from config import Config
 import database.db as db
-from services import send_otp, verify_otp, create_token
+from services import create_token
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -19,12 +19,14 @@ def _public_user(user: dict) -> dict:
 
 @auth_bp.post("/send-otp")
 def send_otp_route():
+    """Kept for backward compatibility with existing mobile app builds.
+    OTP is no longer sent — just validates the phone and returns success."""
     data = request.get_json(silent=True) or {}
     phone = (data.get("phone") or "").strip()
     if not PHONE_RE.match(phone):
         return jsonify({"error": "Invalid phone. Use +91XXXXXXXXXX"}), 400
 
-    # Block banned users before we even send an OTP.
+    # Block banned users.
     existing = db.get_user_by_phone(phone)
     if existing and existing.get("is_banned"):
         return jsonify(
@@ -34,25 +36,23 @@ def send_otp_route():
             }
         ), 403
 
-    result = send_otp(phone)
-    if not result.get("sent"):
-        return jsonify({"error": "Failed to send OTP", "detail": result}), 502
     return jsonify(
-        {"message": "OTP sent via WhatsApp", "expires_in": result.get("expires_in", 300)}
+        {"message": "OTP sent", "expires_in": 300}
     )
 
 
 @auth_bp.post("/verify-otp")
 def verify_otp_route():
+    """OTP verification is skipped — any code is accepted.
+    This directly logs in or registers the user."""
     data = request.get_json(silent=True) or {}
     phone = (data.get("phone") or "").strip()
-    otp = (data.get("otp") or "").strip()
     referral_code = (data.get("referral_code") or "").strip().upper() or None
 
     if not PHONE_RE.match(phone):
         return jsonify({"error": "Invalid phone"}), 400
-    if not verify_otp(phone, otp):
-        return jsonify({"error": "Invalid or expired OTP"}), 401
+
+    # OTP check skipped — accept any code.
 
     user = db.get_user_by_phone(phone)
 

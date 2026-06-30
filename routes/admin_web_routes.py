@@ -470,15 +470,8 @@ def settings():
             if val:
                 patch[key] = val
 
-        # WhatsApp OTP provider settings.
-        for key in (
-            "whatsapp_api_url",
-            "whatsapp_session_id",
-            "whatsapp_template_id",
-            "whatsapp_template_name",
-        ):
-            if request.form.get(key) is not None:
-                patch[key] = (request.form.get(key) or "").strip()
+
+
 
         db.update_settings(patch)
         flash("Settings saved.", "success")

@@ -1,8 +1,7 @@
 """
-External integrations: JWT, WhatsApp OTP, Razorpay payouts.
+External integrations: JWT, Razorpay payouts.
 
 Production configuration:
-  - OTP is always delivered & verified over WhatsApp (no dev shortcut).
   - Razorpay payout credentials (test + live) are managed from the admin panel
     and read from the database at call time.
 """
@@ -112,93 +111,8 @@ def admin_required(fn):
     return wrapper
 
 
-# --------------------------------------------------------------------------- #
-# OTP — delivered & verified over WhatsApp by an external provider.
-#
-# The provider exposes:
-#   POST /api/auth/otp/request  {phone, sessionId, templateId, templateName}
-#   POST /api/auth/otp/verify   {phone, code}
-# It generates the code, sends it to the user's WhatsApp, and verifies it.
-# CashBee only forwards the phone number and issues its own JWT on success.
-#
-# `phone` arrives as "+91XXXXXXXXXX"; the provider expects "91XXXXXXXXXX".
-# --------------------------------------------------------------------------- #
-OTP_TTL = 300  # seconds
 
 
-def _wa_cfg() -> dict:
-    """WhatsApp OTP config from the admin panel (DB), falling back to env."""
-    s = db.get_settings()
-    return {
-        "url": (s.get("whatsapp_api_url") or Config.WHATSAPP_API_URL).rstrip("/"),
-        "session_id": s.get("whatsapp_session_id") or Config.WHATSAPP_OTP_SESSION_ID,
-        "template_id": s.get("whatsapp_template_id") or Config.WHATSAPP_OTP_TEMPLATE_ID,
-        "template_name": s.get("whatsapp_template_name") or Config.WHATSAPP_OTP_TEMPLATE_NAME,
-    }
-
-
-def _wa_url(base: str, path: str) -> str:
-    return f"{base.rstrip('/')}{path}"
-
-
-def _wa_headers() -> dict:
-    # ngrok-skip header is harmless on non-ngrok hosts and kept for parity.
-    return {"Content-Type": "application/json", "ngrok-skip-browser-warning": "true"}
-
-
-def _wa_error(data: dict) -> str:
-    msg = data.get("message")
-    if isinstance(msg, str):
-        return msg
-    if isinstance(msg, list) and msg:
-        return "; ".join(str(m) for m in msg)
-    return "OTP request failed"
-
-
-def send_otp(phone: str) -> dict:
-    """Request an OTP over WhatsApp via the external provider."""
-    cfg = _wa_cfg()
-    wa_phone = phone.lstrip("+")
-    try:
-        resp = requests.post(
-            _wa_url(cfg["url"], "/api/auth/otp/request"),
-            headers=_wa_headers(),
-            json={
-                "phone": wa_phone,
-                "sessionId": cfg["session_id"],
-                "templateId": cfg["template_id"],
-                "templateName": cfg["template_name"],
-            },
-            timeout=20,
-        )
-    except requests.RequestException as exc:
-        return {"sent": False, "error": f"Cannot reach OTP service: {exc}"}
-
-    data = {}
-    try:
-        data = resp.json()
-    except ValueError:
-        pass
-
-    if resp.status_code // 100 == 2:
-        return {"sent": True, "expires_in": int(data.get("expiresInSeconds") or OTP_TTL)}
-    return {"sent": False, "error": _wa_error(data)}
-
-
-def verify_otp(phone: str, otp: str) -> bool:
-    """Verify the OTP with the WhatsApp provider."""
-    cfg = _wa_cfg()
-    wa_phone = phone.lstrip("+")
-    try:
-        resp = requests.post(
-            _wa_url(cfg["url"], "/api/auth/otp/verify"),
-            headers=_wa_headers(),
-            json={"phone": wa_phone, "code": otp},
-            timeout=20,
-        )
-    except requests.RequestException:
-        return False
-    return resp.status_code // 100 == 2
 
 
 # --------------------------------------------------------------------------- #

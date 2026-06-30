@@ -96,19 +96,7 @@
     <p class="muted" style="margin-top:14px"><i class="fa-solid fa-lock"></i> Secrets are write-only — leave a secret field blank to keep the stored value. Payouts use the credentials of the selected <strong>Active mode</strong>.</p>
   </div>
 
-  <div class="card">
-    <div class="card-head">
-      <h3><i class="fa-brands fa-whatsapp"></i> WhatsApp OTP</h3>
-      <span class="muted">Login OTP delivery provider</span>
-    </div>
-    <div class="field-grid">
-      <label><span>API URL</span><input type="text" name="whatsapp_api_url" value="{{ settings.whatsapp_api_url }}" placeholder="https://your-whatsapp-api.example.com" /></label>
-      <label><span>Session ID</span><input type="text" name="whatsapp_session_id" value="{{ settings.whatsapp_session_id }}" placeholder="session id" /></label>
-      <label><span>Template ID</span><input type="text" name="whatsapp_template_id" value="{{ settings.whatsapp_template_id }}" placeholder="template id" /></label>
-      <label><span>Template Name</span><input type="text" name="whatsapp_template_name" value="{{ settings.whatsapp_template_name }}" placeholder="OTP Verification" /></label>
-    </div>
-    <p class="muted" style="margin-top:14px"><i class="fa-solid fa-circle-info"></i> These control how login OTPs are sent &amp; verified. Changes apply immediately — no restart needed.</p>
-  </div>
+
 
   <div class="card">
     <div class="card-head">
