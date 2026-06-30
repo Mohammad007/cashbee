@@ -14,10 +14,12 @@ from flask import (
     abort,
     send_from_directory,
     current_app,
+    request,
     Response,
 )
 
 import database.db as db
+from extensions import limiter
 
 site_bp = Blueprint("site", __name__)
 
@@ -139,6 +141,45 @@ def privacy_policy():
 def terms():
     return render_template(
         "site/terms.html", support_email=SUPPORT_EMAIL, updated="June 27, 2026"
+    )
+
+
+@site_bp.route("/delete-account", methods=["GET", "POST"])
+@limiter.limit("5 per hour", methods=["POST"])
+def delete_account():
+    """Public account-deletion page + request form (required by Google Play).
+
+    GET  → shows the form and the deletion/retention policy.
+    POST → records the request for the admin to action; shows a confirmation.
+    """
+    if request.method == "POST":
+        phone = (request.form.get("phone") or "").strip()
+        name = (request.form.get("name") or "").strip()
+        reason = (request.form.get("reason") or "").strip()
+        confirmed = request.form.get("confirm")
+
+        digits = "".join(c for c in phone if c.isdigit())
+        if not confirmed or len(digits) < 8:
+            return render_template(
+                "site/delete_account.html",
+                support_email=SUPPORT_EMAIL,
+                updated="June 30, 2026",
+                error="Please enter a valid registered phone number and tick the confirmation box.",
+                form={"phone": phone, "name": name, "reason": reason},
+            ), 400
+
+        db.create_deletion_request(phone=phone, name=name, reason=reason)
+        return render_template(
+            "site/delete_account.html",
+            support_email=SUPPORT_EMAIL,
+            updated="June 30, 2026",
+            submitted=True,
+        )
+
+    return render_template(
+        "site/delete_account.html",
+        support_email=SUPPORT_EMAIL,
+        updated="June 30, 2026",
     )
 
 

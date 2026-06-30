@@ -51,6 +51,7 @@ festivals_db = _open("festivals.json")
 milestones_db = _open("milestones.json")
 spins_db = _open("spins.json")
 purchases_db = _open("purchases.json")
+deletion_requests_db = _open("deletion_requests.json")
 
 Q = Query()
 
@@ -683,6 +684,31 @@ def update_purchase(order_id: str, patch: dict):
 def get_purchases_by_user(user_id: str) -> list:
     with _lock:
         rows = purchases_db.search(Q.user_id == user_id)
+    rows.sort(key=lambda r: r.get("created_at", ""), reverse=True)
+    return rows
+
+
+# --------------------------------------------------------------------------- #
+# Account deletion requests (submitted from the public /delete-account form)
+# --------------------------------------------------------------------------- #
+def create_deletion_request(phone, name="", reason="") -> dict:
+    """Record a user's account-deletion request for the admin to action."""
+    rec = {
+        "id": new_id(),
+        "phone": phone,
+        "name": name,
+        "reason": reason,
+        "status": "pending",   # pending | done
+        "created_at": now_iso(),
+    }
+    with _lock:
+        deletion_requests_db.insert(rec)
+    return rec
+
+
+def all_deletion_requests() -> list:
+    with _lock:
+        rows = deletion_requests_db.all()
     rows.sort(key=lambda r: r.get("created_at", ""), reverse=True)
     return rows
 

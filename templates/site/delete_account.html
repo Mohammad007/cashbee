@@ -1,0 +1,129 @@
+{% extends "site/base.html" %}
+{% block title %}Delete Your Account — CashBee{% endblock %}
+
+{% block content %}
+<style>
+  .del-form { max-width: 560px; margin: 28px 0; display: grid; gap: 18px; }
+  .del-form .field { display: grid; gap: 7px; }
+  .del-form label { font-weight: 600; font-size: 0.95rem; color: var(--ink); }
+  .del-form .req { color: #e0463c; }
+  .del-form input[type="text"],
+  .del-form input[type="tel"],
+  .del-form textarea {
+    width: 100%; padding: 13px 15px; font: inherit; color: var(--ink);
+    background: #fff; border: 1.5px solid var(--line); border-radius: 12px;
+    outline: none; transition: border-color .15s;
+  }
+  .del-form input:focus, .del-form textarea:focus { border-color: var(--brand); }
+  .del-form textarea { resize: vertical; min-height: 90px; }
+  .del-form .hint { font-size: 0.85rem; color: #6b7280; }
+  .del-form .check { display: flex; gap: 10px; align-items: flex-start; font-size: 0.92rem; }
+  .del-form .check input { margin-top: 3px; width: 18px; height: 18px; flex: none; }
+  .del-note { background: #fff8ec; border: 1.5px solid #f5d9a8; border-radius: 14px; padding: 16px 18px; margin: 22px 0; }
+  .del-alert { border-radius: 14px; padding: 16px 18px; margin: 22px 0; font-weight: 500; }
+  .del-alert.ok { background: #eafaf0; border: 1.5px solid #a8e6c1; color: #15603a; }
+  .del-alert.err { background: #fdeceb; border: 1.5px solid #f3b6b1; color: #a02b22; }
+</style>
+
+<section class="page-hero">
+  <div class="hero-glow"></div>
+  <div class="container reveal">
+    <span class="pill"><i class="fa-solid fa-user-xmark"></i> Account control</span>
+    <h1>Delete Your <span class="gradient-text">CashBee</span> Account</h1>
+    <p class="lead center">Submit a request below to permanently delete your CashBee account and personal data.</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container legal reveal">
+    <p><strong>App name:</strong> CashBee &mdash; Watch Ads &amp; Earn Real Cash<br />
+    <strong>Developer:</strong> CashBee<br />
+    <strong>Last updated:</strong> {{ updated }}</p>
+
+    <p>This page lets you request deletion of your <strong>CashBee</strong> account and the personal data associated with it, in line with Google Play's User Data and Account Deletion policy.</p>
+
+    {% if submitted %}
+      <div class="del-alert ok">
+        <i class="fa-solid fa-circle-check"></i>
+        Your account deletion request has been received. We will verify it and permanently delete your account within 30 days. A confirmation will be sent once it is complete. If you need help, email <a href="mailto:{{ support_email }}">{{ support_email }}</a>.
+      </div>
+    {% else %}
+
+      {% if error %}
+        <div class="del-alert err"><i class="fa-solid fa-circle-exclamation"></i> {{ error }}</div>
+      {% endif %}
+
+      <h2>1. Request account deletion</h2>
+      <p>Fill in the form below using the phone number registered on your CashBee account. We use it only to verify the account is yours before deleting it.</p>
+
+      <form class="del-form" method="post" action="{{ url_for('site.delete_account') }}">
+        <div class="field">
+          <label for="phone">Registered phone number <span class="req">*</span></label>
+          <input type="tel" id="phone" name="phone" placeholder="e.g. +91 98765 43210"
+                 value="{{ form.phone if form else '' }}" required />
+          <span class="hint">The phone number you use to log in to CashBee.</span>
+        </div>
+
+        <div class="field">
+          <label for="name">Display name (optional)</label>
+          <input type="text" id="name" name="name" placeholder="Your name in the app"
+                 value="{{ form.name if form else '' }}" />
+        </div>
+
+        <div class="field">
+          <label for="reason">Reason (optional)</label>
+          <textarea id="reason" name="reason" placeholder="Tell us why you're leaving (optional)">{{ form.reason if form else '' }}</textarea>
+        </div>
+
+        <label class="check">
+          <input type="checkbox" name="confirm" value="yes" required />
+          <span>I understand this will <strong>permanently delete</strong> my CashBee account and that any unredeemed coin balance will be forfeited and cannot be recovered.</span>
+        </label>
+
+        <button type="submit" class="btn btn-primary btn-lg"><i class="fa-solid fa-trash-can"></i> Submit deletion request</button>
+      </form>
+
+      <div class="del-note">
+        Prefer email? You can also send your request to
+        <a href="mailto:{{ support_email }}?subject=Account%20Deletion%20Request">{{ support_email }}</a>
+        from your registered details with the subject &ldquo;Account Deletion Request&rdquo;.
+      </div>
+    {% endif %}
+
+    <h2>2. What happens next</h2>
+    <p>We process deletion requests within <strong>7 days</strong> of verifying your request, and complete removal within <strong>30 days</strong>.</p>
+
+    <h2>3. What data is deleted</h2>
+    <p>When your account is deleted, we permanently remove the personal data linked to it, including:</p>
+    <ul>
+      <li>Your <strong>phone number</strong> and account login.</li>
+      <li>Your <strong>display name</strong> and profile information.</li>
+      <li>Your <strong>coin balance, earnings, daily streak, level, and lucky-spin history</strong>.</li>
+      <li>Your <strong>ad-watch activity</strong> and in-app transaction history.</li>
+      <li>Your <strong>referral code</strong> and referral relationships.</li>
+      <li>Any <strong>saved UPI ID</strong> used for withdrawals.</li>
+    </ul>
+
+    <h2>4. What data is retained, and for how long</h2>
+    <p>For legal, tax, financial, and fraud-prevention reasons we may keep a limited set of records even after your account is deleted. This data is retained only as long as required and is not used to re-create your account:</p>
+    <ul>
+      <li><strong>Completed withdrawal (payout) records</strong> &mdash; retained up to <strong>7 years</strong> to meet financial and tax obligations.</li>
+      <li><strong>Purchase / billing records</strong> (Premium memberships, Boosts via Google Play) &mdash; retained up to <strong>7 years</strong> for accounting and dispute resolution. Note: payments are processed by Google Play; we never store your card or bank details.</li>
+      <li><strong>Fraud / abuse records</strong> &mdash; minimal anonymized markers may be retained to prevent repeat abuse of the rewards system.</li>
+    </ul>
+    <p>Wherever possible, retained records are anonymized or de-identified so they can no longer be linked back to you personally.</p>
+
+    <h2>5. Important notes</h2>
+    <ul>
+      <li>Account deletion is <strong>permanent and cannot be undone</strong>.</li>
+      <li>Any <strong>unredeemed coin balance is forfeited</strong> on deletion and has no cash value once the account is removed. If you wish to withdraw eligible earnings, please do so <em>before</em> requesting deletion.</li>
+    </ul>
+
+    <h2>6. Questions</h2>
+    <p>If you have any questions about deleting your account or your data, contact us at:<br />
+    <a href="mailto:{{ support_email }}">{{ support_email }}</a></p>
+
+    <p>See also our <a href="{{ url_for('site.privacy_policy') }}">Privacy Policy</a>.</p>
+  </div>
+</section>
+{% endblock %}
